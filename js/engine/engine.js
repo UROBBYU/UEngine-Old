@@ -19,8 +19,8 @@ export class Game {
 	static Animation = class extends Game.Action {
 		constructor(func, speed, object, texture) {
 			this.object = object
-			this.texture = texture
-			validateTexture(object, texture)
+			this.texture = texture.clone()
+			validateTexture(object, this.texture)
 			super(() => {
 				if (object.material.uniforms.tex.value !== this.texture)
 					object.material.uniforms.tex.value = this.texture
@@ -29,10 +29,10 @@ export class Game {
 		}
 
 		validateTexture(object, texture) {
-			if (this.texture)
-				object.material.uniforms.tex.value = this.texture
+			if (texture)
+				object.material.uniforms.tex.value = texture
 			else
-				this.texture = object.material.uniforms.tex.value
+				this.texture = object.material.uniforms.tex.value.clone()
 		}
 	}
 
