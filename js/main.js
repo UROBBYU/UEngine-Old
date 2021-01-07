@@ -4,7 +4,12 @@ import characterSprite from './sprites/character.js'
 
 display.requestFullscreen = display.requestFullscreen || display.mozRequestFullScreen
 
-/*var isGame = () => document.fullscreenElement
+const game = new Game()
+
+game.addObj('background', sprite, 1000)
+game.addObj('character', sprite, 100)
+
+var isGame = () => document.fullscreenElement
 
 display.addEventListener('click', e => {
 	if (!isGame())
@@ -80,10 +85,9 @@ window.addEventListener('keyup', e => {
 		}
 	}
 })
-// game.uni('background').pos.value += 0.5
 
-document.addEventListener('fullscreenchange', e => {
-  /*if (document.fullscreenElement) {
+/*document.addEventListener('fullscreenchange', e => {
+  if (document.fullscreenElement) {
 		game.mouse.visible = true
   } else {
 		game.mouse.visible = false
