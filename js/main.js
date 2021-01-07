@@ -93,3 +93,5 @@ window.addEventListener('keyup', e => {
 		game.mouse.visible = false
   }
 });*/
+
+game.render()
