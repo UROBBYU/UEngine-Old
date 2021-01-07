@@ -1,4 +1,4 @@
-const uniforms = {
+uniforms = {
 	resolution: {
 		type: 'v2',
 		value: new THREE.Vector2(window.innerWidth, window.innerHeight)
@@ -18,40 +18,53 @@ const uniforms = {
 	tex: {
 		type:'t',
 		value: new THREE.TextureLoader().load('data:image/bmp;base64,Qk1CAAAAAAAAAD4AAAAoAAAAAQAAAAEAAAABAAEAAAAAAAQAAAAlFgAAJRYAAAAAAAAAAAAAAAAAAP///wAAAAAA')
+	},
+	texFlipX: {
+		value: false
+	},
+	texFlipY: {
+		value: false
 	}
 }
 
-const shader = `
+shader = `
 uniform vec2 resolution;
 uniform vec4 mouse;
 uniform vec2 pos;
 uniform float step;
 uniform sampler2D tex;
+uniform bool texFlipX;
+uniform bool texFlipY;
 
 void main()
 {
+	float imageSize = 1.5;
   vec2 texSize = vec2(textureSize(tex, 0));
   float resDim = texSize.y / texSize.x;
-  vec2 dim = floor(gl_FragCoord.xy / resolution.xy * texSize.y * 1.5) + 0.5;
+  vec2 dim = floor(gl_FragCoord.xy / resolution.xy * texSize.y * imageSize) + 0.5;
   dim.x += step * texSize.y;
   float x = (dim.x - pos.x) / texSize.x;
   float y = (dim.y - pos.y) / texSize.y;
   vec2 cord = vec2(x, y);
   if (x < resDim * (step + 1.) && x > resDim * (step) && y < 1. && y > 0.) {
-    gl_FragColor = texture2D(tex, cord);
+		if (texFlipX)
+			cord.x = (2. * step + 1.) * resDim - cord.x;
+		if (texFlipY)
+			cord.y = 1. - cord.y;
+		gl_FragColor = texture2D(tex, cord);
   } else {
     gl_FragColor = vec4(0., 0., 0., 0.);
   }
 }
 `
 
-const material = new THREE.ShaderMaterial({
+material = new THREE.ShaderMaterial({
   transparent: true,
 	uniforms: uniforms,
 	fragmentShader: shader
 })
 
-const geometry = new THREE.PlaneGeometry(10, 10)
+geometry = new THREE.PlaneGeometry(10, 10)
 
-const sprite = new THREE.Mesh(geometry, material)
-export default sprite
+const characterSprite = new THREE.Mesh(geometry, material)
+export default characterSprite

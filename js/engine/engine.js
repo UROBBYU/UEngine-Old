@@ -24,7 +24,7 @@ export class Game {
 				func()
 			}, speed)
 			this.object = object
-			this.texture = (texture ? texture : object.material.uniforms.tex.value).clone()
+			this.texture = texture
 		}
 	}
 
@@ -39,23 +39,22 @@ export class Game {
 
 	static AnimationSlideShow = class extends Game.Animation {
 		constructor(speed, steps, start, step, object, texture) {
-			var tex = (texture ? texture : object.material.uniforms.tex.value).clone()
-			console.log(tex)
+			var tex = texture
 			if (tex.image.width % step === 0) {
-				object.material.uniforms.step.value = this.start
+				object.material.uniforms.step.value = start
 				super(() => {
+					object.material.uniforms.step.value += this.step
 					if (object.material.uniforms.step.value < 0)
-						object.material.uniforms.step.value = steps - 1
-					if (object.material.uniforms.step.value >= steps)
+						object.material.uniforms.step.value = this.steps - 1
+					if (object.material.uniforms.step.value >= this.steps)
 						object.material.uniforms.step.value = 0
-					object.material.uniforms.step.value += step
 				}, speed, object, tex)
 				this.steps = steps
-				this.start = start
+				this.begin = start
 				this.step = step
 				this.pause = this.stop
 				this.stop = () => {
-					object.material.uniforms.step.value = this.start
+					object.material.uniforms.step.value = this.begin
 					this.pause()
 				}
 			} else {
@@ -111,82 +110,8 @@ export class Game {
 				}
 			}
 		})
+		me.isPaused = true
 		me.objects = {}
-		/*me.character = {
-			faceR: true,
-			inter1: -1,
-			inter2: -1,
-			move(x, y) {
-				clearInterval(me.character.inter1)
-				clearInterval(me.character.inter2)
-				let func1, func2, time1, time2, maxFrame
-				if (x === 0) {
-					me.uni('character').step.value = 0
-					me.uni('character').tex.value = me.sprites.characterIdle
-					maxFrame = 4
-					func1 = () => {}
-					func2 = () => {
-						me.uni('character').step.value++
-						if (me.uni('character').step.value == maxFrame)
-							me.uni('character').step.value = 0
-					}
-					time1 = 100000
-					time2 = 300
-				} else if (x > 0) {
-					if (!me.character.faceR) {
-						me.uni('character').pos.value.x += 14
-						me.character.faceR = true
-						me.sprites.characterIdle.image.style.transform = ''
-						me.sprites.characterWalk.image.style.transform = ''
-						me.sprites.characterRun.image.style.transform = ''
-					}
-					if (x < 10) {
-						me.uni('character').tex.value = me.sprites.characterWalk
-						maxFrame = 6
-					} else {
-						me.uni('character').tex.value = me.sprites.characterRun
-						maxFrame = 6
-					}
-					func1 = () => {
-						me.uni('background').step.value += 0.12 * (x / 10)
-					}
-					func2 = () => {
-						me.uni('character').step.value++
-						if (me.uni('character').step.value == maxFrame)
-							me.uni('character').step.value = 0
-					}
-					time1 = 1
-					time2 = 1700 / x
-				} else if (x < 0) {
-					if (me.character.faceR) {
-						me.uni('character').pos.value.x -= 14
-						me.character.faceR = false
-						me.sprites.characterIdle.image.style.transform = 'scaleX(-1)'
-						me.sprites.characterWalk.image.style.transform = 'scaleX(-1)'
-						me.sprites.characterRun.image.style.transform = 'scaleX(-1)'
-					}
-					if (x > -10) {
-						me.uni('character').tex.value = me.sprites.characterWalk
-						maxFrame = 6
-					} else {
-						me.uni('character').tex.value = me.sprites.characterRun
-						maxFrame = 6
-					}
-					func1 = () => {
-						me.uni('background').step.value += 0.2 * (x / 10)
-					}
-					func2 = () => {
-						me.uni('character').step.value++
-						if (me.uni('character').step.value == maxFrame)
-							me.uni('character').step.value = 0
-					}
-					time1 = 1
-					time2 = 1700 / -x
-				}
-				me.character.inter1 = setInterval(func1, time1)
-				me.character.inter2 = setInterval(func2, time2)
-			}
-		}*/
 		me.mouse = Object.create({},{
 			x: {
 				get() {
@@ -259,6 +184,12 @@ export class Game {
 		me.addObj = (name, obj, pos) => {
 			me.objects[name] = obj
 			me.objects[name].position.z = pos
+			me.objects[name].flipX = () => {
+				me.uni(name).texFlipX.value = !me.uni(name).texFlipX.value
+			}
+			me.objects[name].flipY = () => {
+				me.uni(name).texFlipY.value = !me.uni(name).texFlipY.value
+			}
 			me.scene.add(obj)
 		}
 
@@ -278,7 +209,8 @@ export class Game {
 		me.render = (time) => {
 			me.resize()
 
-			me.actions.run(time)
+			if (!me.isPaused)
+				me.actions.run(time)
 
 			me.renderer.render(me.scene, me.camera)
 			requestAnimationFrame(me.render)
