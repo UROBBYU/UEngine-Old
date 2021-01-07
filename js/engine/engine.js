@@ -40,6 +40,7 @@ export class Game {
 	static AnimationSlideShow = class extends Game.Animation {
 		constructor(speed, steps, start, step, object, texture) {
 			var tex = (texture ? texture : object.material.uniforms.tex.value).clone()
+			console.log(tex)
 			if (tex.image.width % step === 0) {
 				object.material.uniforms.step.value = this.start
 				super(() => {
