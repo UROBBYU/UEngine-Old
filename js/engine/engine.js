@@ -43,7 +43,7 @@ export class Game {
 
 	static AnimationSlideShow = class extends Game.Animation {
 		constructor(speed, steps, start, step, object, texture) {
-			var tex = validateTexture(object, texture)
+			var tex = super.validateTexture(object, texture)
 			if (tex.image.width % step === 0) {
 				object.material.uniforms.step.value = this.start
 				super(() => {
@@ -270,11 +270,12 @@ export class Game {
 		}
 
 		me.resize = () => {
+			let dim = (window.innerWidth > window.innerHeight ? window.innerHeight : window.innerWidth)
 			for (let name in me.objects) {
-				me.uni(name).resolution.value.x = window.innerWidth
-				me.uni(name).resolution.value.y = window.innerHeight
+				me.uni(name).resolution.value.x = dim
+				me.uni(name).resolution.value.y = dim
 			}
-			me.renderer.setSize(window.innerWidth, window.innerHeight)
+			me.renderer.setSize(dim, dim)
 		}
 
 		me.render = (time) => {
