@@ -143,9 +143,9 @@ export class Game {
 					if (!me.character.faceR) {
 						me.uni('character').pos.value.x += 14
 						me.character.faceR = true
-						me.sprites.characterIdle.flipY = true
-						me.sprites.characterRun.flipY = true
-						me.sprites.characterWalk.flipY = true
+						me.sprites.characterIdle.image.display.style.transform = ''
+						me.sprites.characterWalk.image.display.style.transform = ''
+						me.sprites.characterRun.image.display.style.transform = ''
 					}
 					if (x < 10) {
 						me.uni('character').tex.value = me.sprites.characterWalk
@@ -168,9 +168,9 @@ export class Game {
 					if (me.character.faceR) {
 						me.uni('character').pos.value.x -= 14
 						me.character.faceR = false
-						me.sprites.characterIdle.flipY = false
-						me.sprites.characterRun.flipY = false
-						me.sprites.characterWalk.flipY = false
+						me.sprites.characterIdle.image.display.style.transform = 'scaleX(-1)'
+						me.sprites.characterWalk.image.display.style.transform = 'scaleX(-1)'
+						me.sprites.characterRun.image.display.style.transform = 'scaleX(-1)'
 					}
 					if (x > -10) {
 						me.uni('character').tex.value = me.sprites.characterWalk
