@@ -1,4 +1,4 @@
-export class Game {
+export default class {
 	static Action = class {
 		constructor(func, speed) {
 			this.run = func
