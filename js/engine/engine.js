@@ -82,7 +82,7 @@ export class Game {
 		me.sprites = {
 			add: (name, url) => {
 				if (!me.sprites[name])
-					me.texLoader.load(
+					return me.texLoader.load(
 						url,
 						texture => {
 							me.sprites[name] = texture
@@ -121,7 +121,7 @@ export class Game {
 				get() {
 					return (name, speed, func) => {
 						if (!me.actions[name])
-							me.actions[name] = new Game.actions(func, speed)
+							me.actions[name] = new Game.Action(func, speed)
 						else
 							console.error('Cannot add animation', {name: name, speed: speed, func: func})
 					}
@@ -130,7 +130,7 @@ export class Game {
 			remove: {
 				get() {
 					return name => {
-						if (me.actions[name] && me.actions[name].constructor === Game.actions)
+						if (me.actions[name] && me.actions[name].constructor === Game.Action)
 							delete me.actions[name]
 						else
 							console.error('Cannot remove animation', {name: name})
@@ -140,6 +140,7 @@ export class Game {
 		})
 		me.objects = {}
 		me.character = {
+			faceR: true,
 			inter1: -1,
 			inter2: -1,
 			move(x, y) {
@@ -147,103 +148,64 @@ export class Game {
 				clearInterval(me.character.inter2)
 				let func1, func2, time1, time2, maxFrame
 				if (x === 0) {
-					game.uni('character').sprt.value = 0
-					game.texLoader.load(
-					  'https://urobbyu.github.io/Icons/game/GraveRobber_idle.png',
-					  texture => {
-					    game.uni('character').tex.value = texture
-					  },
-					  undefined,
-					  function (err) {
-					      console.log('An error happened', err)
-					  }
-					)
+					me.uni('character').sprt.value = 0
+					me.uni('character').tex.value = me.sprites.characterIdle
 					maxFrame = 4
 					func1 = () => {}
 					func2 = () => {
-						game.uni('character').sprt.value++
-						if (game.uni('character').sprt.value == maxFrame)
-							game.uni('character').sprt.value = 0
+						me.uni('character').sprt.value++
+						if (me.uni('character').sprt.value == maxFrame)
+							me.uni('character').sprt.value = 0
 					}
 					time1 = 100000
 					time2 = 300
 				} else if (x > 0) {
-					if (!game.uni('character').faceR.value) {
-						game.uni('character').pos.value.x += 14
-						game.uni('character').faceR.value = true
+					if (!me.character.faceR) {
+						me.uni('character').pos.value.x += 14
+						me.character.faceR = true
+						me.sprites.characterIdle.flipY = false
+						me.sprites.characterRun.flipY = false
+						me.sprites.characterWalk.flipY = false
 					}
 					if (x < 10) {
-						game.texLoader.load(
-						  'https://urobbyu.github.io/Icons/game/GraveRobber_walk.png',
-						  texture => {
-						    game.uni('character').tex.value = texture
-						  },
-						  undefined,
-						  function (err) {
-						      console.log('An error happened', err)
-						  }
-						)
+						me.uni('character').tex.value = me.sprites.characterWalk
 						maxFrame = 6
 					} else {
-						game.texLoader.load(
-						  'https://urobbyu.github.io/Icons/game/GraveRobber_run.png',
-						  texture => {
-						    game.uni('character').tex.value = texture
-						  },
-						  undefined,
-						  function (err) {
-						      console.log('An error happened', err)
-						  }
-						)
+						me.uni('character').tex.value = me.sprites.characterRun
 						maxFrame = 6
 					}
 					func1 = () => {
-						game.uni('background').pos.value += 0.12 * (x / 10)
+						me.uni('background').pos.value += 0.12 * (x / 10)
 					}
 					func2 = () => {
-						game.uni('character').sprt.value++
-						if (game.uni('character').sprt.value == maxFrame)
-							game.uni('character').sprt.value = 0
+						me.uni('character').sprt.value++
+						if (me.uni('character').sprt.value == maxFrame)
+							me.uni('character').sprt.value = 0
 					}
 					time1 = 1
 					time2 = 1700 / x
 				} else if (x < 0) {
-					if (game.uni('character').faceR.value) {
-						game.uni('character').pos.value.x -= 14
-						game.uni('character').faceR.value = false
+					if (me.character.faceR) {
+						me.uni('character').pos.value.x -= 14
+						me.character.faceR = false
+						me.sprites.characterIdle.flipY = true
+						me.sprites.characterRun.flipY = true
+						me.sprites.characterWalk.flipY = true
 					}
 					if (x > -10) {
-						game.texLoader.load(
-						  'https://urobbyu.github.io/Icons/game/GraveRobber_walk.png',
-						  texture => {
-						    game.uni('character').tex.value = texture
-						  },
-						  undefined,
-						  function (err) {
-						      console.log('An error happened', err)
-						  }
-						)
+						me.uni('character').tex.value = me.sprites.characterWalk
 						maxFrame = 6
 					} else {
-						game.texLoader.load(
-						  'https://urobbyu.github.io/Icons/game/GraveRobber_run.png',
-						  texture => {
-						    game.uni('character').tex.value = texture
-						  },
-						  undefined,
-						  function (err) {
-						      console.log('An error happened', err)
-						  }
-						)
+						me.uni('character').tex.value = me.sprites.characterRun
 						maxFrame = 6
 					}
 					func1 = () => {
-						game.uni('background').pos.value += 0.2 * (x / 10)
+						me.uni('background').pos.value += 0.2 * (x / 10)
 					}
 					func2 = () => {
-						game.uni('character').sprt.value++
-						if (game.uni('character').sprt.value == maxFrame)
-							game.uni('character').sprt.value = 0
+						me.uni('character').sprt.value++
+						if (me.uni('character').sprt.value == maxFrame)
+							me.uni('character').sprt.value = 0
 					}
 					time1 = 1
 					time2 = 1700 / -x
@@ -332,7 +294,7 @@ export class Game {
 		}
 
 		me.resize = () => {
-			for (let name in game.objects) {
+			for (let name in me.objects) {
 				me.uni(name).resolution.value.x = window.innerWidth
 				me.uni(name).resolution.value.y = window.innerHeight
 			}

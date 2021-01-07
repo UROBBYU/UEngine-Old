@@ -15,9 +15,6 @@ const uniforms = {
     type: 'f',
     value: 0
   },
-  faceR: {
-    value: true
-  },
 	tex: {
 		type:'t',
 		value: new THREE.TextureLoader().load('data:image/bmp;base64,Qk1CAAAAAAAAAD4AAAAoAAAAAQAAAAEAAAABAAEAAAAAAAQAAAAlFgAAJRYAAAAAAAAAAAAAAAAAAP///wAAAAAA')
