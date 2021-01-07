@@ -18,41 +18,33 @@ export class Game {
 
 	static Animation = class extends Game.Action {
 		constructor(func, speed, object, texture) {
-			this.object = object
-			this.texture = texture.clone()
-			validateTexture(object, this.texture)
 			super(() => {
 				if (object.material.uniforms.tex.value !== this.texture)
 					object.material.uniforms.tex.value = this.texture
 				func()
 			}, speed)
+			this.object = object
+			this.texture = validateTexture(object, texture)
 		}
 
 		validateTexture(object, texture) {
-			if (texture)
-				object.material.uniforms.tex.value = texture
-			else
-				this.texture = object.material.uniforms.tex.value.clone()
+			return (texture ? texture : object.material.uniforms.tex.value).clone()
 		}
 	}
 
 	static AnimationSlider = class extends Game.Animation {
 		constructor(speed, step, object, texture) {
-			this.step = step
 			super(() => {
 				object.material.uniforms.step.value += this.step
 			}, speed, object, texture)
+			this.step = step
 		}
 	}
 
 	static AnimationSlideShow = class extends Game.Animation {
 		constructor(speed, steps, start, step, object, texture) {
-			this.steps = steps
-			this.start = start
-			this.step = step
-			var tex = texture.clone()
-			validateTexture(object, tex)
-			if (this.texture.image.width % step === 0) {
+			var tex = validateTexture(object, texture)
+			if (tex.image.width % step === 0) {
 				object.material.uniforms.step.value = this.start
 				super(() => {
 					if (object.material.uniforms.step.value < 0)
@@ -61,6 +53,9 @@ export class Game {
 						object.material.uniforms.step.value = 0
 					object.material.uniforms.step.value += step
 				}, speed, object, tex)
+				this.steps = steps
+				this.start = start
+				this.step = step
 				this.pause = this.stop
 				this.stop = () => {
 					object.material.uniforms.step.value = this.start
