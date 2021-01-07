@@ -1,4 +1,4 @@
-export default class {
+export class Game {
 	static Action = class {
 		constructor(func, speed) {
 			this.run = func
@@ -16,7 +16,7 @@ export default class {
 		}
 	}
 
-	static Animation = class extends Action {
+	static Animation = class extends Game.Action {
 		constructor(func, speed, object, texture) {
 			this.object = object
 			this.texture = texture
@@ -36,7 +36,7 @@ export default class {
 		}
 	}
 
-	static AnimationSlider = class extends Animation {
+	static AnimationSlider = class extends Game.Animation {
 		constructor(speed, step, object, texture) {
 			this.step = step
 			super(() => {
@@ -45,7 +45,7 @@ export default class {
 		}
 	}
 
-	static AnimationSlideShow = class extends Animation {
+	static AnimationSlideShow = class extends Game.Animation {
 		constructor(speed, steps, start, step, object, texture) {
 			this.steps = steps
 			this.start = start

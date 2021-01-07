@@ -1,6 +1,6 @@
-import Game from './engine/engine.js'
-import {sprite as backgroundSprite} from './sprites/background.js'
-import {sprite as characterSprite} from './sprites/character.js'
+import {Game} from './engine/engine.js'
+import backgroundSprite from './sprites/background.js'
+import characterSprite from './sprites/character.js'
 
 display.requestFullscreen = display.requestFullscreen || display.mozRequestFullScreen
 

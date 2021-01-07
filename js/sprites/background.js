@@ -43,5 +43,6 @@ const material = new THREE.ShaderMaterial({
 
 const geometry = new THREE.PlaneGeometry(10, 10)
 
-export const sprite = new THREE.Mesh(geometry, material)
+const sprite = new THREE.Mesh(geometry, material)
+export default sprite
 //game.addObj('background', sprite, 1000)
