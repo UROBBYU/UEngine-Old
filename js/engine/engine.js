@@ -50,7 +50,8 @@ export class Game {
 			this.steps = steps
 			this.start = start
 			this.step = step
-			validateTexture(object, texture)
+			var tex = texture.clone()
+			validateTexture(object, tex)
 			if (this.texture.image.width % step === 0) {
 				object.material.uniforms.step.value = this.start
 				super(() => {
@@ -59,7 +60,7 @@ export class Game {
 					if (object.material.uniforms.step.value >= steps)
 						object.material.uniforms.step.value = 0
 					object.material.uniforms.step.value += step
-				}, speed, object, texture)
+				}, speed, object, tex)
 				this.pause = this.stop
 				this.stop = () => {
 					object.material.uniforms.step.value = this.start
@@ -119,7 +120,7 @@ export class Game {
 			}
 		})
 		me.objects = {}
-		me.character = {
+		/*me.character = {
 			faceR: true,
 			inter1: -1,
 			inter2: -1,
@@ -193,7 +194,7 @@ export class Game {
 				me.character.inter1 = setInterval(func1, time1)
 				me.character.inter2 = setInterval(func2, time2)
 			}
-		}
+		}*/
 		me.mouse = Object.create({},{
 			x: {
 				get() {
