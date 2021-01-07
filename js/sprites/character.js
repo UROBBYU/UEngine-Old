@@ -1,4 +1,4 @@
-uniforms = {
+const uniforms = {
 	resolution: {
 		type: 'v2',
 		value: new THREE.Vector2(window.innerWidth, window.innerHeight)
@@ -27,7 +27,7 @@ uniforms = {
 	}
 }
 
-shader = `
+const shader = `
 uniform vec2 resolution;
 uniform vec4 mouse;
 uniform vec2 pos;
@@ -58,13 +58,13 @@ void main()
 }
 `
 
-material = new THREE.ShaderMaterial({
+const material = new THREE.ShaderMaterial({
   transparent: true,
 	uniforms: uniforms,
 	fragmentShader: shader
 })
 
-geometry = new THREE.PlaneGeometry(10, 10)
+const geometry = new THREE.PlaneGeometry(10, 10)
 
 const characterSprite = new THREE.Mesh(geometry, material)
 export default characterSprite
