@@ -116,26 +116,6 @@ export class Game {
 						}
 					}
 				}
-			},
-			add: {
-				get() {
-					return (name, speed, func) => {
-						if (!me.actions[name])
-							me.actions[name] = new Game.Action(func, speed)
-						else
-							console.error('Cannot add animation', {name: name, speed: speed, func: func})
-					}
-				}
-			},
-			remove: {
-				get() {
-					return name => {
-						if (me.actions[name] && me.actions[name].constructor === Game.Action)
-							delete me.actions[name]
-						else
-							console.error('Cannot remove animation', {name: name})
-					}
-				}
 			}
 		})
 		me.objects = {}
@@ -148,14 +128,14 @@ export class Game {
 				clearInterval(me.character.inter2)
 				let func1, func2, time1, time2, maxFrame
 				if (x === 0) {
-					me.uni('character').sprt.value = 0
+					me.uni('character').step.value = 0
 					me.uni('character').tex.value = me.sprites.characterIdle
 					maxFrame = 4
 					func1 = () => {}
 					func2 = () => {
-						me.uni('character').sprt.value++
-						if (me.uni('character').sprt.value == maxFrame)
-							me.uni('character').sprt.value = 0
+						me.uni('character').step.value++
+						if (me.uni('character').step.value == maxFrame)
+							me.uni('character').step.value = 0
 					}
 					time1 = 100000
 					time2 = 300
@@ -163,9 +143,9 @@ export class Game {
 					if (!me.character.faceR) {
 						me.uni('character').pos.value.x += 14
 						me.character.faceR = true
-						me.sprites.characterIdle.flipY = false
-						me.sprites.characterRun.flipY = false
-						me.sprites.characterWalk.flipY = false
+						me.sprites.characterIdle.flipY = true
+						me.sprites.characterRun.flipY = true
+						me.sprites.characterWalk.flipY = true
 					}
 					if (x < 10) {
 						me.uni('character').tex.value = me.sprites.characterWalk
@@ -175,12 +155,12 @@ export class Game {
 						maxFrame = 6
 					}
 					func1 = () => {
-						me.uni('background').pos.value += 0.12 * (x / 10)
+						me.uni('background').step.value += 0.12 * (x / 10)
 					}
 					func2 = () => {
-						me.uni('character').sprt.value++
-						if (me.uni('character').sprt.value == maxFrame)
-							me.uni('character').sprt.value = 0
+						me.uni('character').step.value++
+						if (me.uni('character').step.value == maxFrame)
+							me.uni('character').step.value = 0
 					}
 					time1 = 1
 					time2 = 1700 / x
@@ -188,9 +168,9 @@ export class Game {
 					if (me.character.faceR) {
 						me.uni('character').pos.value.x -= 14
 						me.character.faceR = false
-						me.sprites.characterIdle.flipY = true
-						me.sprites.characterRun.flipY = true
-						me.sprites.characterWalk.flipY = true
+						me.sprites.characterIdle.flipY = false
+						me.sprites.characterRun.flipY = false
+						me.sprites.characterWalk.flipY = false
 					}
 					if (x > -10) {
 						me.uni('character').tex.value = me.sprites.characterWalk
@@ -200,12 +180,12 @@ export class Game {
 						maxFrame = 6
 					}
 					func1 = () => {
-						me.uni('background').pos.value += 0.2 * (x / 10)
+						me.uni('background').step.value += 0.2 * (x / 10)
 					}
 					func2 = () => {
-						me.uni('character').sprt.value++
-						if (me.uni('character').sprt.value == maxFrame)
-							me.uni('character').sprt.value = 0
+						me.uni('character').step.value++
+						if (me.uni('character').step.value == maxFrame)
+							me.uni('character').step.value = 0
 					}
 					time1 = 1
 					time2 = 1700 / -x
