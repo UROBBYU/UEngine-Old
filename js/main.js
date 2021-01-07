@@ -6,8 +6,8 @@ display.requestFullscreen = display.requestFullscreen || display.mozRequestFullS
 
 const game = new Game()
 
-game.addObj('background', sprite, 1000)
-game.addObj('character', sprite, 100)
+game.addObj('background', backgroundSprite, 1000)
+game.addObj('character', characterSprite, 100)
 
 var isGame = () => document.fullscreenElement
 
