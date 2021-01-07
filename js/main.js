@@ -7,12 +7,12 @@ display.requestFullscreen = display.requestFullscreen || display.mozRequestFullS
 const game = new Game()
 
 game.addObj('background', backgroundSprite, 1000)
-game.uni('background').tex.value = game.sprites.add('background', '../../img/Background.jpg')
+game.uni('background').tex.value = game.sprites.add('background', '../img/Background.jpg')
 game.addObj('character', characterSprite, 100)
-game.uni('character').tex.value = game.sprites.add('character', '../../img/GraveRobber.png')
-game.sprites.add('characterIdle', '../../img/GraveRobber_idle.png')
-game.sprites.add('characterRun', '../../img/GraveRobber_run.png')
-game.sprites.add('characterWalk', '../../img/GraveRobber_walk.png')
+game.uni('character').tex.value = game.sprites.add('character', '../img/GraveRobber.png')
+game.sprites.add('characterIdle', '../img/GraveRobber_idle.png')
+game.sprites.add('characterRun', '../img/GraveRobber_run.png')
+game.sprites.add('characterWalk', '../img/GraveRobber_walk.png')
 
 var isGame = () => document.fullscreenElement
 
