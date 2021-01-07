@@ -24,11 +24,7 @@ export class Game {
 				func()
 			}, speed)
 			this.object = object
-			this.texture = validateTexture(object, texture)
-		}
-
-		validateTexture(object, texture) {
-			return (texture ? texture : object.material.uniforms.tex.value).clone()
+			this.texture = (texture ? texture : object.material.uniforms.tex.value).clone()
 		}
 	}
 
@@ -43,7 +39,7 @@ export class Game {
 
 	static AnimationSlideShow = class extends Game.Animation {
 		constructor(speed, steps, start, step, object, texture) {
-			var tex = super.validateTexture(object, texture)
+			var tex = (texture ? texture : object.material.uniforms.tex.value).clone()
 			if (tex.image.width % step === 0) {
 				object.material.uniforms.step.value = this.start
 				super(() => {
