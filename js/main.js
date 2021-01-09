@@ -1,4 +1,5 @@
 import {Game} from './engine/engine.js'
+window.Game = Game
 
 display.requestFullscreen = display.requestFullscreen || display.mozRequestFullScreen
 
