@@ -38,24 +38,49 @@ export class Game {
 	}
 
 	static AnimationSlideShow = class extends Game.Animation {
-		constructor(speed, steps, start, step, object, texture) {
+		constructor(speed, steps, start, step, object, texture, sequence, onSeqEnd) {
 			var tex = texture
 			if (tex.image.width % step === 0) {
-				object.step = start
 				super(() => {
 					object.stepsMax = this.steps
-					object.step += this.step
-					if (object.step < 0)
-						object.step = this.steps - 1
-					if (object.step >= this.steps)
-						object.step = 0
+					if (this.sequence) {
+						if (this.sequenceIndex < 0) {
+							this.stop()
+							if (onSeqEnd)
+								onSeqEnd(object)
+							return
+						}
+						if (this.sequenceIndex >= this.sequence.length) {
+							this.stop()
+							if (onSeqEnd)
+								onSeqEnd(object)
+							return
+						}
+						object.step = sequence[this.sequenceIndex]
+						this.sequenceIndex += this.step
+					} else {
+						object.step += this.step
+						if (object.step < 0)
+							object.step = this.steps - 1
+						if (object.step >= this.steps)
+							object.step = 0
+					}
 				}, speed, object, tex)
 				this.steps = steps
 				this.begin = start
 				this.step = step
+				if (sequence) {
+					this.sequence = sequence
+					this.sequenceIndex = start
+				} else {
+					object.step = start
+				}
 				this.pause = this.stop
 				this.stop = () => {
-					object.step = this.begin
+					if (this.sequence)
+						this.sequenceIndex = this.begin
+					else
+						object.step = this.begin
 					this.pause()
 				}
 			} else {
@@ -210,13 +235,13 @@ gl_FragColor = texture2D(tex, coord);
 	}
 
 	static SpriteSlideShow = class extends Game.Sprite {
-		constructor(x, y, scale, z) {
+		constructor(x, y, scale, maxSteps, step, z) {
 			super(x, y, scale, z)
 			this.uniforms.steps = {
-				value: 1
+				value: maxSteps
 			}
 			this.uniforms.step = {
-				value: 0
+				value: step
 			}
 			this.shaderUniforms = `
 				${this.shaderUniforms}
@@ -262,10 +287,8 @@ else
 	}
 
 	static SpriteSwitch = class extends Game.SpriteSlideShow {
-		constructor(x, y, scale, maxStates, state, z) {
-			super(x, y, scale, z)
-			this.stepsMax = maxStates
-			this.step = state
+		constructor(x, y, scale, maxSteps, step, z) {
+			super(x, y, scale, maxSteps, step, z)
 			this.uniforms.state = {
 				value: 0
 			}
@@ -285,8 +308,6 @@ else {
 		|| (texture2D(tex, vec2(coord.x, coord.y - 1. / texSize.y)).a != 0.)))
 		if (state == 1) {
 			pixel = vec4(1., 0.964, 0.859, 1.);
-		} else {
-			pixel = vec4(0., 0., 0., 1.);
 		}
   gl_FragColor = pixel;
 }
@@ -304,38 +325,86 @@ else {
 	}
 
 	static Level = class {
-		static encode = obj => window.btoa(unescape(encodeURIComponent(obj)))
+		static encode = str => {
+			return encodeURI(unescape(btoa(str)))
+		}
 
-		constructor(gameObject) {
+		constructor(gameObject, link, devMode) {
 			if (gameObject.constructor === Game) {
-				this.gameObject = gameObject
-				this.decode = str => {
-					var tmp = new Function(decodeURIComponent(escape(window.atob(str))))
-					tmp = tmp()
-					if (!tmp) {
-						console.error('Invalid data in Level', this)
-						return
-					}
-					this.data = {}
-					Object.assign(this.data, tmp)
-					this.load = () => {
-						delete this.load
-						return new Promise((res, rej) => {
-							this.gameObject.loader.loadTextures(this.data.textures).then(() => {
+				this.data = {
+					gameObject: gameObject,
+					origin: link,
+					state: false,
+					devMode: devMode
+				}
+				this.load = () => {
+					if (!this.data.state) {
+						const handle = tmp => {
+							if (!tmp) {
+								console.error('Invalid data in Level', this)
+								return
+							}
+							Object.assign(this.data, tmp)
+							this.data.gameObject.loader.loadTextures(this.data.textures).then(() => {
 								this.data.objects = new Function('gameObj', this.data.objects)
-								this.data.objects = this.data.objects(this.gameObject)
+								this.data.objects = this.data.objects(this.data.gameObject)
 								for (let obj in this.data.objects)
-									this.gameObject.objects.add(obj, this.data.objects[obj])
+									this.data.gameObject.objects.add(obj, this.data.objects[obj])
 								this.data.actions = new Function('gameObj', this.data.actions)
-								this.data.actions = this.data.actions(this.gameObject)
-								Object.assign(this.gameObject.actions, this.data.actions)
-								this.data.postLoad(this.gameObject)
-								delete this.data
+								this.data.actions = this.data.actions(this.data.gameObject)
+								Object.assign(this.data.gameObject.actions, this.data.actions)
+								this.data.postLoad(this.data.gameObject)
+								const data = {
+									textures: [],
+									objects: [],
+									actions: []
+								}
+								Object.entries(this.data.textures).forEach(key => {
+									data.textures.push(key[0])
+								})
+								Object.entries(this.data.objects).forEach(key => {
+									data.objects.push(key[0])
+								})
+								Object.entries(this.data.actions).forEach(key => {
+									data.actions.push(key[0])
+								})
+								Object.assign(this.data, data)
 							})
-						})
+							if (!this.data.devMode)
+								tmp = undefined
+						}
+						if (this.data.devMode)
+							handle(this.data.origin)
+						else
+							fetch(this.data.origin).then(res => res.text()).then(text => {
+								var tmp = new Function(decodeURIComponent(escape(window.atob(text))))
+								tmp = tmp()
+								handle(tmp)
+							})
+						this.data.state = true
+					} else {
+						console.error('Level is already loaded')
 					}
-					tmp = undefined
-					delete this.decode
+				}
+				this.unload = () => {
+					if (this.data.state) {
+						this.data.actions.forEach(key => {
+							delete this.data.gameObject.actions[key]
+						})
+						this.data.objects.forEach(key => {
+							this.data.gameObject.objects.remove(key)
+						})
+						this.data.textures.forEach(key => {
+							this.data.gameObject.sprites.remove(key)
+						})
+						delete this.data.textures
+						delete this.data.objects
+						delete this.data.actions
+						delete this.data.state
+						delete this.data.postLoad
+					} else {
+						console.error('Level is not loaded')
+					}
 				}
 			} else
 				console.error('Invalid argument', gameObject)
@@ -359,10 +428,12 @@ else {
 							if (me.loader.toLoad === 0) {
 								clearInterval(inter)
 								me.loader.toLoad = 0
+								delete me.loader.cur
 								res()
 							} else if (me.loader.toLoad < 0) {
 								clearInterval(inter)
 								me.loader.toLoad = 0
+								delete me.loader.cur
 								rej()
 							}
 						}, 50)
@@ -385,32 +456,40 @@ else {
 				}
 			}
 		}
-		me.sprites = {
-			add: (name, url) => {
-				if (!me.sprites[name]) {
-					me.loader.toLoad++
-					return me.texLoader.load(
-						url,
-						texture => {
-							me.loader.toLoad--
-							me.sprites[name] = texture
-						},
-						undefined,
-						function (err) {
-							me.loader.toLoad = Number.NEGATIVE_INFINITY
-							console.error('Error occured while loading texture', {name: name, url: url})
-						}
-					)
-				} else
-					console.error('Cannot add sprite', {name: name})
+		me.sprites = Object.create({},{
+			add: {
+				get() {
+					return (name, url) => {
+						if (!me.sprites[name]) {
+							me.loader.toLoad++
+							return me.texLoader.load(
+								url,
+								texture => {
+									me.loader.toLoad--
+									me.sprites[name] = texture
+								},
+								undefined,
+								function (err) {
+									me.loader.toLoad = Number.NEGATIVE_INFINITY
+									console.error('Error occured while loading texture', {name: name, url: url})
+								}
+							)
+						} else
+							console.error('Cannot add sprite', {name: name})
+					}
+				}
 			},
-			remove: name => {
-				if (me.sprites[name] && me.sprites[name].constructor === THREE.Texture)
-					delete me.sprites[name]
-				else
-					console.error('Cannot remove sprite', {name: name})
+			remove: {
+				get() {
+					return name => {
+						if (me.sprites[name] && THREE.Texture.prototype.isPrototypeOf(me.sprites[name]))
+							delete me.sprites[name]
+						else
+							console.error('Cannot remove sprite', {name: name})
+					}
+				}
 			}
-		}
+		})
 		me.actions = Object.create({},{
 			run: {
 				get() {
@@ -425,15 +504,103 @@ else {
 						}
 					}
 				}
+			},
+			add: {
+				get() {
+					return (name, action) => {
+						if (!me.actions[name])
+							me.actions[name] = action
+						else
+							console.error('Cannot add action', {name: name, action: action})
+					}
+				}
+			},
+			remove: {
+				get() {
+					return name => {
+						if (me.actions[name] && Game.Action.prototype.isPrototypeOf(me.actions[name]))
+							delete me.actions[name]
+						else
+							console.error('Cannot remove action', {name: name})
+					}
+				}
 			}
 		})
 		me.isPaused = true
+		me.pause = () => {
+			return new Promise((res, rej) => {
+				me.isPauseConfirmed = false
+				me.isPaused = true
+				let inter = setInterval(() => {
+					if (me.isPauseConfirmed) {
+						me.loader.wait().then(() => {
+							delete me.isPauseConfirmed
+							res()
+						})
+					}
+				}, 50)
+			})
+		}
+		me.break = () => {
+			return new Promise((res, rej) => {
+				me.pause().then(() => {
+					me.hardStop = true
+					let inter = setInterval(() => {
+						if (me.isBreakConfirmed) {
+							res()
+						}
+					}, 50)
+				})
+			})
+		}
+		me.resume = () => {
+			delete me.hardStop
+			me.isPaused = false
+		}
 		me.objects = Object.create({},{
 			add: {
 				get() {
 					return (name, obj) => {
-						me.objects[name] = obj
-						me.scene.add(obj.sprite)
+						if (!me.objects[name]) {
+							me.objects[name] = obj
+							me.scene.add(obj.sprite)
+						} else
+							console.error('Cannot add object', {name: name, object: obj})
+					}
+				}
+			},
+			remove: {
+				get() {
+					return name => {
+						if (me.objects[name] && Game.Sprite.prototype.isPrototypeOf(me.objects[name])) {
+							me.scene.remove(me.objects[name].sprite)
+							delete me.objects[name]
+						} else
+							console.error('Cannot remove object', {name: name})
+					}
+				}
+			}
+		})
+		me.levels = Object.create({},{
+			add: {
+				get() {
+					return (name, level) => {
+						if (!me.levels[name])
+							me.levels[name] = level
+						else
+							console.error('Cannot add level', {name: name, level: level})
+					}
+				}
+			},
+			remove: {
+				get() {
+					return name => {
+						if (me.levels[name] && me.levels[name].constructor === Game.Level) {
+							if (me.levels[name].data.state === true)
+								me.levels[name].unload()
+							delete me.objects[name]
+						} else
+							console.error('Cannot remove level', {name: name})
 					}
 				}
 			}
@@ -555,11 +722,13 @@ else {
 
 		me.resize = () => {
 			let dim = (window.innerWidth > window.innerHeight ? window.innerHeight : window.innerWidth)
-			for (let name in me.objects) {
-				me.uni(name).resolution.value.x = dim
-				me.uni(name).resolution.value.y = dim
-				me.objects[name].scale.w = window.innerHeight / me.uni(name).tex.value.image.naturalHeight
-			}
+			if (!me.isPaused)
+				for (let name in me.objects) {
+					me.uni(name).resolution.value.x = dim
+					me.uni(name).resolution.value.y = dim
+					if (me.uni(name).tex.value.image)
+						me.objects[name].scale.w = window.innerHeight / me.uni(name).tex.value.image.naturalHeight
+				}
 			me.renderer.setSize(dim, dim)
 		}
 
@@ -568,9 +737,15 @@ else {
 
 			if (!me.isPaused)
 				me.actions.run(time)
+			else
+				me.isPauseConfirmed = true
 
 			me.renderer.render(me.scene, me.camera)
-			requestAnimationFrame(me.render)
+			if (!me.hardStop)
+				requestAnimationFrame(me.render)
+			else {
+				me.isBreakConfirmed = true
+			}
 		}
 	}
 }

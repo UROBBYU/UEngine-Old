@@ -5,18 +5,17 @@ display.requestFullscreen = display.requestFullscreen || display.mozRequestFullS
 
 window.game = new Game()
 
-window.testLevel = new Game.Level(game)
+game.levels.add('forest1', new Game.Level(game, 'https://urobbyu.github.io/UEngine/levels/forest1.txt')
+game.levels.add('forest2', new Game.Level(game, 'https://urobbyu.github.io/UEngine/levels/forest2.txt')
+game.levels.add('forest3', new Game.Level(game, 'https://urobbyu.github.io/UEngine/levels/forest3.txt')
+game.levels.add('forest4', new Game.Level(game, 'https://urobbyu.github.io/UEngine/levels/forest4.txt')
 
-fetch('https://urobbyu.github.io/UEngine/levels/forest.txt').then(res => res.text()).then(text => {
-	testLevel.decode(text)
-	testLevel.load()
-	game.render()
-})
+game.levels['forest1'].load()
 
-var isGame = () => document.fullscreenElement
+game.render()
 
 display.addEventListener('click', e => {
-	if (!isGame())
+	if (game.isPaused)
 		display.requestFullscreen()
 })
 
@@ -41,7 +40,7 @@ var keyD = false
 var keyShift = false
 
 window.addEventListener('keydown', e => {
-	if (isGame()) {
+	if (!game.isPaused) {
 		switch (e.code) {
 		case 'KeyA':
 			if (!keyA) {
@@ -97,7 +96,7 @@ window.addEventListener('keydown', e => {
 })
 
 window.addEventListener('keyup', e => {
-	if (isGame()) {
+	if (!game.isPaused) {
 		switch (e.code) {
 		case 'KeyF':
 			if (game.objects.chest.state == 1 && game.objects.chest.step == 0) {
@@ -106,6 +105,35 @@ window.addEventListener('keyup', e => {
 				game.actions['chest'].stop()
 				game.objects.chest.state = 0
 				game.objects.chest.step = 2
+			}
+			if (game.objects.teleport_keyboard.state == 1) {
+				game.objects.teleport_portal.portal.ready = false
+				game.actions.teleport_portalChange.start()
+				let arrTypes = Object.entries(game.objects.teleport_portal.portal.types)
+				let index
+				for (var i = 0; i < arrTypes.length; i++) {
+					if (arrTypes[i][0] === game.objects.teleport_portal.portal.cur) {
+						index = i
+						break
+					}
+				}
+				index++
+				if (index >= arrTypes.length)
+					index = 0
+				game.objects.teleport_portal.portal.cur = arrTypes[index][0]
+				game.objects.teleport_gems.step = arrTypes[index][1]
+			}
+			if (game.objects.teleport_portal.step === 5 + game.objects.teleport_portal.portal.types[game.objects.teleport_portal.portal.cur] * 4) {
+				game.pause().then(() => {
+					let newLevel = game.objects.teleport_portal.portal.cur
+					for (let name in game.levels)
+						if (game.levels[name].data.state)
+							game.levels[name].unload()
+						game.levels[newLevel].load()
+						game.loader.wait().then(() => {
+							game.resume()
+					})
+				})
 			}
 			break
 		case 'KeyA':
@@ -140,8 +168,8 @@ window.addEventListener('keyup', e => {
 
 document.addEventListener('fullscreenchange', e => {
   if (document.fullscreenElement) {
-		game.isPaused = false
+		game.resume()
   } else {
-		game.isPaused = true
+		game.pause()
   }
 })
