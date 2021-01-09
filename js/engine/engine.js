@@ -68,20 +68,16 @@ export class Game {
 		constructor(x, y, scale, z) {
 			this.uniforms = {
 				resolution: {
-					type: 'v2',
 					value: new THREE.Vector2(window.innerWidth, window.innerHeight)
 				},
 				pos: {
-			    type: 'v2',
 			    value: new THREE.Vector2(x, y)
 			  },
 				tex: {
-					type: 't',
 					value: new THREE.TextureLoader().load('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAQCAYAAAAiYZ4HAAABhWlDQ1BJQ0MgcHJvZmlsZQAAKJF9kT1Iw1AUhU9TpSIVBTuIOGSoLloQleIoVSyChdJWaNXB5KV/0KQhSXFxFFwLDv4sVh1cnHV1cBUEwR8QNzcnRRcp8b6k0CLGC4/3cd49h/fuA4RGhalm1ySgapaRisfEbG5VDLzChwAGMI6oxEw9kV7MwLO+7qmb6i7Cs7z7/qw+JW8ywCcSzzHdsIg3iKObls55nzjESpJCfE48YdAFiR+5Lrv8xrnosMAzQ0YmNU8cIhaLHSx3MCsZKvEMcVhRNcoXsi4rnLc4q5Uaa92TvzCY11bSXKc1gjiWkEASImTUUEYFFiK0a6SYSNF5zMM/7PiT5JLJVQYjxwKqUCE5fvA/+D1bszA95SYFY0D3i21/jAKBXaBZt+3vY9tungD+Z+BKa/urDWD2k/R6WwsfAf3bwMV1W5P3gMsdYOhJlwzJkfy0hEIBeD+jb8oBg7dA75o7t9Y5Th+ADM1q+QY4OATGipS97vHuns65/dvTmt8PupRyxKoto9QAAAAGYktHRAD/AJ0AAMbsV1AAAAAJcEhZcwAALiMAAC4jAXilP3YAAAAHdElNRQflAQcSCCW2lRjJAAAAGXRFWHRDb21tZW50AENyZWF0ZWQgd2l0aCBHSU1QV4EOFwAAAM5JREFUKM+tkrENwjAQRZ8j6JmAnrhAmcEVYyBmoKOkYwbEGNB4BBSaQE8JDRschePEhyNEwe+SvH/3820YkLwQeSH8ohQcMhX8Q98imfkULueqfzOuFWgmGPUszyoD3bYBwG9sZgyGR4BdGUDWOoZfBqOxmO6nOxhgpw3u0CQtPWr5uYwGKbLpgL/aLkbcGJkRd6BEZ3fD0biDkWPo23m95RP2p7CxMAvd8zeZRdKSd1Z/XefTgX667Pur4G7twc0ScNUeXFbdXt+hCEa9Ab3jSowNnihhAAAAAElFTkSuQmCC')
 				},
 				texScale: {
-					type: 'v4',
-			    value: new THREE.Vector4(1, 1, scale, 1)
+					value: new THREE.Vector4(1, 1, scale, 1)
 				},
 				texFlipX: {
 					value: false
@@ -307,6 +303,45 @@ else {
 		}
 	}
 
+	static Level = class {
+		static encode = obj => window.btoa(unescape(encodeURIComponent(obj)))
+
+		constructor(gameObject) {
+			if (gameObject.constructor === Game) {
+				this.gameObject = gameObject
+				this.decode = str => {
+					var tmp = new Function(decodeURIComponent(escape(window.atob(str))))
+					tmp = tmp()
+					if (!tmp) {
+						console.error('Invalid data in Level', this)
+						return
+					}
+					this.data = {}
+					Object.assign(this.data, tmp)
+					this.load = () => {
+						delete this.load
+						return new Promise((res, rej) => {
+							this.gameObject.loader.loadTextures(this.data.textures).then(() => {
+								this.data.objects = new Function('gameObj', this.data.objects)
+								this.data.objects = this.data.objects(this.gameObject)
+								for (let obj in this.data.objects)
+									this.gameObject.objects.add(obj, this.data.objects[obj])
+								this.data.actions = new Function('gameObj', this.data.actions)
+								this.data.actions = this.data.actions(this.gameObject)
+								Object.assign(this.gameObject.actions, this.data.actions)
+								this.data.postLoad(this.gameObject)
+								delete this.data
+							})
+						})
+					}
+					tmp = undefined
+					delete this.decode
+				}
+			} else
+				console.error('Invalid argument', gameObject)
+		}
+	}
+
 	constructor() {
 		let me = this
 		me.scene = new THREE.Scene()
@@ -318,19 +353,36 @@ else {
 		me.loader = {
 			toLoad: 0,
 			wait: () => {
-				return new Promise((res, rej) => {
-					var inter = setInterval(() => {
-						if (me.loader.toLoad === 0) {
-							clearInterval(inter)
-							me.loader.toLoad = 0
-							res()
-						} else if (me.loader.toLoad < 0) {
-							clearInterval(inter)
-							me.loader.toLoad = 0
-							rej()
-						}
-					}, 50)
-				})
+				if (!me.loader.cur) {
+					me.loader.cur = new Promise((res, rej) => {
+						var inter = setInterval(() => {
+							if (me.loader.toLoad === 0) {
+								clearInterval(inter)
+								me.loader.toLoad = 0
+								res()
+							} else if (me.loader.toLoad < 0) {
+								clearInterval(inter)
+								me.loader.toLoad = 0
+								rej()
+							}
+						}, 50)
+					})
+				}
+				return me.loader.cur
+			},
+			loadTextures: tex => {
+				if (tex.constructor === Object) {
+					for (let key in tex)
+						me.sprites.add(key, tex[key])
+					return me.loader.wait()
+				} else if (tex.constructor === Array) {
+					tex.forEach(val => {
+						me.sprites.add(val[0], val[1])
+					})
+					return me.loader.wait()
+				} else {
+					console.error('Invalid argument: ', tex)
+				}
 			}
 		}
 		me.sprites = {
@@ -376,7 +428,16 @@ else {
 			}
 		})
 		me.isPaused = true
-		me.objects = {}
+		me.objects = Object.create({},{
+			add: {
+				get() {
+					return (name, obj) => {
+						me.objects[name] = obj
+						me.scene.add(obj.sprite)
+					}
+				}
+			}
+		})
 		me.actions['cameraMove'] = new Game.Action(() => {
 			me.world.camera.position.x += me.world.camera.speed.x
 			me.world.camera.position.y += me.world.camera.speed.y
@@ -410,6 +471,15 @@ else {
 				}
 			}
 		}
+		me.colliders = Object.create({},{
+			add: {
+				get() {
+					return (func, obj1, obj2) => {
+
+					}
+				}
+			}
+		})
 		/*me.mouse = Object.create({},{
 			x: {
 				get() {
@@ -478,11 +548,6 @@ else {
 				}
 			}
 		})*/
-
-		me.addObj = (name, obj) => {
-			me.objects[name] = obj
-			me.scene.add(obj.sprite)
-		}
 
 		me.uni = (name) => {
 			return me.objects[name].uniforms

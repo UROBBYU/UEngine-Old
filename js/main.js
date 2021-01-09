@@ -1,45 +1,14 @@
 import {Game} from './engine/engine.js'
 
-
 display.requestFullscreen = display.requestFullscreen || display.mozRequestFullScreen
 
-const game = new Game();
+window.game = new Game()
 
-const backgroundSprite = new Game.SpritePlane(0, 0, 1, 1000)
+window.testLevel = new Game.Level(game)
 
-const characterSprite = new Game.SpriteSlideShow(0, 12, 2 / 3, 100)
-
-const chestSprite = new Game.SpriteSwitch(40, 13, 18 / 72, 3, 0, 500)
-
-game.addObj('background', backgroundSprite)
-game.addObj('character', characterSprite)
-game.addObj('chest', chestSprite)
-game.world.camera.target = game.objects['character']
-game.sprites.add('background', 'https://urobbyu.github.io/UEngine/img/Background.jpg')
-game.sprites.add('character', 'https://urobbyu.github.io/UEngine/img/GraveRobber.png')
-game.sprites.add('characterIdle', 'https://urobbyu.github.io/UEngine/img/GraveRobber_idle.png')
-game.sprites.add('characterWalk', 'https://urobbyu.github.io/UEngine/img/GraveRobber_walk.png')
-game.sprites.add('characterRun', 'https://urobbyu.github.io/UEngine/img/GraveRobber_run.png')
-game.sprites.add('chest', 'https://urobbyu.github.io/UEngine/img/Chest.png')
-game.loader.wait().then(() => {
-	game.objects['background'].texture = game.sprites['background']
-	game.objects['character'].texture = game.sprites['character']
-	game.objects['chest'].texture = game.sprites['chest']
-
-	game.actions['characterIdle'] = new Game.AnimationSlideShow(300, 4, 0, 1, game.objects['character'], game.sprites['characterIdle'])
-	game.actions['characterWalk'] = new Game.AnimationSlideShow(340, 6, 0, 1, game.objects['character'], game.sprites['characterWalk'])
-	game.actions['characterRun'] = new Game.AnimationSlideShow(170, 6, 0, 1, game.objects['character'], game.sprites['characterRun'])
-
-	game.actions['chest'] = new Game.Action(() => {
-		if (game.objects.chest.position.x < 20 - 3 * game.objects.character.flipX && game.objects.chest.position.x > 0 - 4 * game.objects.character.flipX) {
-			game.objects.chest.uniforms.state.value = 1
-		} else {
-			game.objects.chest.uniforms.state.value = 0
-		}
-	}, 30)
-
-	game.actions['chest'].start()
-	game.actions['characterIdle'].start()
+fetch('https://urobbyu.github.io/UEngine/levels/forest.txt').then(res => res.text()).then(text => {
+	testLevel.decode(text)
+	testLevel.load()
 	game.render()
 })
 
