@@ -1,7 +1,29 @@
 export class Game {
+	static createEventBus(target) {
+		target.events = Object.create({
+			list: []
+		}, {
+			fire: {
+				get() {
+					return (name) => {
+						if (target.events.list[name])
+							target.events.list[name].forEach(func => func(target))
+					}
+				}
+			}
+		})
+		target.addEventListener = (name, func) => target.events.list[name].push(func)
+		target.removeEventListener = (name, func) => target.events.list[name].splice(target.events.list[name].indexOf(func), 1)
+	}
+
 	static Action = class {
 		constructor(func, speed) {
-			this.run = func
+			Game.createEventBus(this)
+			this.run = () => {
+				this.events.fire('beforerun')
+				func()
+				this.events.fire('afterrun')
+			}
 			this.speed = speed
 			this.stop()
 		}
@@ -99,6 +121,12 @@ export class Game {
 				pos: {
 			    value: new THREE.Vector4(x, y, 0, 0)
 			  },
+				bounds: {
+					value: new THREE.Vector4(-1, -1, 1, 1)
+				},
+				camPos: {
+			    value: new THREE.Vector2(0, 0)
+			  },
 				tex: {
 					value: new THREE.TextureLoader().load('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAQCAYAAAAiYZ4HAAABhWlDQ1BJQ0MgcHJvZmlsZQAAKJF9kT1Iw1AUhU9TpSIVBTuIOGSoLloQleIoVSyChdJWaNXB5KV/0KQhSXFxFFwLDv4sVh1cnHV1cBUEwR8QNzcnRRcp8b6k0CLGC4/3cd49h/fuA4RGhalm1ySgapaRisfEbG5VDLzChwAGMI6oxEw9kV7MwLO+7qmb6i7Cs7z7/qw+JW8ywCcSzzHdsIg3iKObls55nzjESpJCfE48YdAFiR+5Lrv8xrnosMAzQ0YmNU8cIhaLHSx3MCsZKvEMcVhRNcoXsi4rnLc4q5Uaa92TvzCY11bSXKc1gjiWkEASImTUUEYFFiK0a6SYSNF5zMM/7PiT5JLJVQYjxwKqUCE5fvA/+D1bszA95SYFY0D3i21/jAKBXaBZt+3vY9tungD+Z+BKa/urDWD2k/R6WwsfAf3bwMV1W5P3gMsdYOhJlwzJkfy0hEIBeD+jb8oBg7dA75o7t9Y5Th+ADM1q+QY4OATGipS97vHuns65/dvTmt8PupRyxKoto9QAAAAGYktHRAD/AJ0AAMbsV1AAAAAJcEhZcwAALiMAAC4jAXilP3YAAAAHdElNRQflAQcSCCW2lRjJAAAAGXRFWHRDb21tZW50AENyZWF0ZWQgd2l0aCBHSU1QV4EOFwAAAM5JREFUKM+tkrENwjAQRZ8j6JmAnrhAmcEVYyBmoKOkYwbEGNB4BBSaQE8JDRschePEhyNEwe+SvH/3820YkLwQeSH8ohQcMhX8Q98imfkULueqfzOuFWgmGPUszyoD3bYBwG9sZgyGR4BdGUDWOoZfBqOxmO6nOxhgpw3u0CQtPWr5uYwGKbLpgL/aLkbcGJkRd6BEZ3fD0biDkWPo23m95RP2p7CxMAvd8zeZRdKSd1Z/XefTgX667Pur4G7twc0ScNUeXFbdXt+hCEa9Ab3jSowNnihhAAAAAElFTkSuQmCC')
 				},
@@ -115,6 +143,7 @@ export class Game {
 			this.shaderUniforms = `
 uniform vec2 resolution;
 uniform vec4 pos;
+uniform vec2 camPos;
 uniform sampler2D tex;
 uniform vec3 texScale;
 uniform bool texFlipX;
@@ -124,7 +153,7 @@ uniform bool texFlipY;
 vec2 texSize = vec2(textureSize(tex, 0));
 vec2 scale = texScale.xy * resolution / texSize * texScale.z;
 vec2 scrDim = resolution / scale;
-vec2 coord = gl_FragCoord.xy / scale - pos.xy + pos.zw;
+vec2 coord = gl_FragCoord.xy / scale - pos.xy + pos.zw - camPos.xy;
 coord = floor(coord) + 0.5;
 if (texFlipX) coord.x = texSize.x - coord.x - texSize.x + pos.z * 2.;
 if (texFlipY) coord.y = texSize.y - coord.y - texSize.y + pos.w * 2.;
@@ -203,24 +232,45 @@ void main()
 
 		set position(val) {
 			if (val.constructor === Object) {
-				if (val.x)
+				if (typeof val.x === 'number')
 					this.uniforms.pos.value.x = val.x
-				if (val.y)
+				if (typeof val.y === 'number')
 					this.uniforms.pos.value.y = val.y
-				if (val.z)
+				if (typeof val.z === 'number')
 					this.uniforms.pos.value.z = val.z
-				if (val.w)
+				if (typeof val.w === 'number')
 					this.uniforms.pos.value.w = val.w
 			} else if (val.constructor === Array) {
 				let [x, y, z, w] = val
-				if (x)
+				if (typeof x === 'number')
 					this.uniforms.pos.value.x = x
-				if (y)
+				if (typeof y === 'number')
 					this.uniforms.pos.value.y = y
-				if (z)
+				if (typeof z === 'number')
 					this.uniforms.pos.value.z = z
-				if (w)
+				if (typeof w === 'number')
 					this.uniforms.pos.value.w = w
+			} else {
+				console.error('Invalid argument: ', val)
+			}
+		}
+
+		get cameraPosition() {
+			return this.uniforms.camPos.value
+		}
+
+		set cameraPosition(val) {
+			if (val.constructor === Object) {
+				if (val.x)
+					this.uniforms.camPos.value.x = val.x
+				if (val.y)
+					this.uniforms.camPos.value.y = val.y
+			} else if (val.constructor === Array) {
+				let [x, y] = val
+				if (x)
+					this.uniforms.camPos.value.x = x
+				if (y)
+					this.uniforms.camPos.value.y = y
 			} else {
 				console.error('Invalid argument: ', val)
 			}
@@ -230,12 +280,46 @@ void main()
 			return this.uniforms.texScale.value
 		}
 
+		get worldBounds() {
+			return {
+				x1: this.position.x + this.bounds.x1,
+				x2: this.position.x + this.bounds.x2,
+				y1: this.position.y + this.bounds.y1,
+				y2: this.position.y + this.bounds.y2
+			}
+		}
+
 		get bounds() {
 			return {
-				x1: this.position.x - this.texture.anchor.x,
-				x2: this.position.x + this.texture.anchor.x,
-				y1: this.position.y - this.texture.anchor.y,
-				y2: this.position.y + this.texture.anchor.y
+				x1: this.flipX ? -this.uniforms.bounds.z : this.uniforms.bounds.x,
+				x2: this.flipX ? -this.uniforms.bounds.x : this.uniforms.bounds.z,
+				y1: this.flipY ? -this.uniforms.bounds.w : this.uniforms.bounds.y,
+				y2: this.flipY ? -this.uniforms.bounds.y : this.uniforms.bounds.w
+			}
+		}
+
+		set bounds(val) {
+			if (val.constructor === Object) {
+				if (typeof val.x1 === 'number')
+					this.uniforms.bounds.x = val.x1
+				if (typeof val.y1 === 'number')
+					this.uniforms.bounds.y = val.y1
+				if (typeof val.x2 === 'number')
+					this.uniforms.bounds.z = val.x2
+				if (typeof val.y2 === 'number')
+					this.uniforms.bounds.w = val.y2
+			} else if (val.constructor === Array) {
+				let [x1, y1, x2, y2] = val
+				if (typeof x1 === 'number')
+					this.uniforms.bounds.x = x1
+				if (typeof y1 === 'number')
+					this.uniforms.bounds.y = y1
+				if (typeof x2 === 'number')
+					this.uniforms.bounds.z = x2
+				if (typeof y2 === 'number')
+					this.uniforms.bounds.w = y2
+			} else {
+				console.error('Invalid argument: ', val)
 			}
 		}
 	}
@@ -277,7 +361,7 @@ vec2 texSize = vec2(textureSize(tex, 0));
 float stepSize = texSize.x / steps;
 vec2 scale = texScale.xy * resolution / vec2(stepSize, texSize.y) * vec2(texScale.z * stepSize / texSize.y, texScale.z);
 vec2 scrDim = resolution / scale;
-vec2 coord = gl_FragCoord.xy / scale - pos.xy + pos.zw;
+vec2 coord = gl_FragCoord.xy / scale - pos.xy + pos.zw - camPos.xy;
 coord = floor(coord) + 0.5;
 if (texFlipX) coord.x = stepSize - coord.x - stepSize + pos.z * 2.;
 if (texFlipY) coord.y = texSize.y - coord.y - texSize.y + pos.w * 2.;
@@ -353,10 +437,11 @@ else {
 			return encodeURI(unescape(btoa(str)))
 		}
 
-		constructor(gameObject, link, devMode) {
-			if (gameObject.constructor === Game) {
+		constructor(gameObj, link, devMode) {
+			if (game.constructor === Game) {
+				Game.createEventBus(this)
 				this.data = {
-					gameObject: gameObject,
+					game: gameObj,
 					origin: link,
 					state: false,
 					devMode: devMode
@@ -369,15 +454,15 @@ else {
 								return
 							}
 							Object.assign(this.data, tmp)
-							this.data.gameObject.loader.loadTextures(this.data.textures).then(() => {
-								this.data.objects = new Function('gameObj', this.data.objects)
-								this.data.objects = this.data.objects(this.data.gameObject)
+							this.data.game.loader.loadTextures(this.data.textures).then(() => {
+								this.data.objects = new Function('game', this.data.objects)
+								this.data.objects = this.data.objects(this.data.game)
 								for (let obj in this.data.objects)
-									this.data.gameObject.objects.add(obj, this.data.objects[obj])
-								this.data.actions = new Function('gameObj', this.data.actions)
-								this.data.actions = this.data.actions(this.data.gameObject)
-								Object.assign(this.data.gameObject.actions, this.data.actions)
-								this.data.postLoad(this.data.gameObject)
+									this.data.game.objects.add(obj, this.data.objects[obj])
+								this.data.actions = new Function('game', this.data.actions)
+								this.data.actions = this.data.actions(this.data.game)
+								Object.assign(this.data.game.actions, this.data.actions)
+								this.data.postLoad(this.data.game)
 								const data = {
 									textures: [],
 									objects: [],
@@ -406,6 +491,7 @@ else {
 								handle(tmp)
 							})
 						this.data.state = true
+						this.events.fire('load')
 					} else {
 						console.error('Level is already loaded')
 					}
@@ -413,19 +499,20 @@ else {
 				this.unload = () => {
 					if (this.data.state) {
 						this.data.actions.forEach(key => {
-							delete this.data.gameObject.actions[key]
+							delete this.data.game.actions[key]
 						})
 						this.data.objects.forEach(key => {
-							this.data.gameObject.objects.remove(key)
+							this.data.game.objects.remove(key)
 						})
 						this.data.textures.forEach(key => {
-							this.data.gameObject.sprites.remove(key)
+							this.data.game.sprites.remove(key)
 						})
 						delete this.data.textures
 						delete this.data.objects
 						delete this.data.actions
 						delete this.data.state
 						delete this.data.postLoad
+						this.events.fire('unload')
 					} else {
 						console.error('Level is not loaded')
 					}
@@ -436,6 +523,7 @@ else {
 	}
 
 	constructor() {
+		Game.createEventBus(this)
 		let me = this
 		me.scene = new THREE.Scene()
 		me.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, -1000)
@@ -454,6 +542,7 @@ else {
 								me.loader.toLoad = 0
 								delete me.loader.cur
 								res()
+								me.events.fire('textureload')
 							} else if (me.loader.toLoad < 0) {
 								clearInterval(inter)
 								me.loader.toLoad = 0
@@ -613,6 +702,7 @@ else {
 				}
 			}
 		})
+		me.solids = {}
 		me.isPaused = true
 		me.pause = () => {
 			return new Promise((res, rej) => {
@@ -623,6 +713,7 @@ else {
 						me.loader.wait().then(() => {
 							delete me.isPauseConfirmed
 							res()
+							me.events.fire('paused')
 						})
 					}
 				}, 50)
@@ -635,6 +726,7 @@ else {
 					let inter = setInterval(() => {
 						if (me.isBreakConfirmed) {
 							res()
+							me.events.fire('break')
 						}
 					}, 50)
 				})
@@ -692,44 +784,122 @@ else {
 				}
 			}
 		})
-		me.actions['cameraMove'] = new Game.Action(() => {
-			me.world.camera.position.x += me.world.camera.speed.x
-			me.world.camera.position.y += me.world.camera.speed.y
-			for (let name in me.objects) {
-				let obj = me.objects[name]
-				if (obj !== me.world.camera.target) {
-					obj.position.x -= me.world.camera.speed.x
-					obj.position.y -= me.world.camera.speed.y
-				}
-			}
-		}, 15)
-		me.world = {
+		me.controls = {
 			camera: {
 				position: {
 					x: 0,
 					y: 0
-				},
-				speed: {
-					x: 0,
-					y: 0
-				},
-				move: (x, y) => {
-					me.world.camera.speed.x = x
-					me.world.camera.speed.y = y
-					me.actions['cameraMove'].start()
-				},
-				stop: () => {
-					me.world.camera.speed.x = 0
-					me.world.camera.speed.y = 0
-					me.actions['cameraMove'].stop()
 				}
+			},
+			speed: {
+				x: 0,
+				y: 0
+			},
+			move: (x, y) => {
+				me.controls.speed.x = x
+				me.controls.speed.y = y
 			}
 		}
 		me.colliders = Object.create({},{
 			add: {
 				get() {
-					return (func, obj1, obj2) => {
-
+					return (name, obj1, obj2, func, isContinous) => {
+						if (!me.colliders[name]) {
+							me.colliders[name] = {
+								run: () => {
+									if (me.colliders.intersects(obj1, obj2)) {
+										if (!me.colliders[name].isFired || isContinous) {
+											func({
+												inside: true
+											})
+											if (!isContinous)
+												me.colliders[name].isFired = true
+										}
+									} else {
+										if (me.colliders[name].isFired || isContinous) {
+											func({
+												inside: false
+											})
+											if (!isContinous)
+												me.colliders[name].isFired = false
+										}
+									}
+								},
+								isFired: false
+							}
+						} else
+							console.error('Invalid argument: ', {name: name, obj1: obj1, obj2: obj2, function: func})
+					}
+				}
+			},
+			remove: {
+				get() {
+					return name => {
+						if (me.colliders[name] && me.colliders.propertyIsEnumerable(name))
+							delete me.colliders[name]
+						else
+							console.error('Invalid argument: ', {name: name})
+					}
+				}
+			},
+			intersects: {
+				get() {
+					return (obj1, obj2) => {
+						let bounds1, bounds2;
+						if (obj1.constructor === Array)
+							bounds1 = {
+								x1: obj1[0],
+								x2: obj1[2],
+								y1: obj1[1],
+								y2: obj1[3]
+							}
+						else if (Game.Sprite.prototype.isPrototypeOf(obj1))
+							bounds1 = {
+								x1: obj1.worldBounds.x1,
+								x2: obj1.worldBounds.x2,
+								y1: obj1.worldBounds.y1,
+								y2: obj1.worldBounds.y2
+							}
+						else if (obj1.constructor === Object)
+							bounds1 = {
+								x1: obj1.x1,
+								x2: obj1.x2,
+								y1: obj1.y1,
+								y2: obj1.y2
+							}
+						if (obj2.constructor === Array)
+							bounds2 = {
+								x1: obj2[0],
+								x2: obj2[2],
+								y1: obj2[1],
+								y2: obj2[3]
+							}
+						else if (Game.Sprite.prototype.isPrototypeOf(obj1))
+							bounds2 = {
+								x1: obj2.worldBounds.x1,
+								x2: obj2.worldBounds.x2,
+								y1: obj2.worldBounds.y1,
+								y2: obj2.worldBounds.y2
+							}
+						else if (obj2.constructor === Object)
+							bounds2 = {
+								x1: obj2.x1,
+								x2: obj2.x2,
+								y1: obj2.y1,
+								y2: obj2.y2
+							}
+						return bounds1.x1 < bounds2.x2
+								&& bounds1.x2 > bounds2.x1
+								&& bounds1.y1 < bounds2.y2
+								&& bounds1.y2 > bounds2.y1
+				}
+				}
+			},
+			run: {
+				get() {
+					return () => {
+						for (let val in me.colliders)
+							me.colliders[val].run()
 					}
 				}
 			}
@@ -815,14 +985,16 @@ else {
 					me.uni(name).resolution.value.y = dim
 				}
 			me.renderer.setSize(dim, dim)
+			me.events.fire('resize')
 		}
 
 		me.render = (time) => {
 			me.resize()
 
-			if (!me.isPaused)
+			if (!me.isPaused) {
+				me.colliders.run()
 				me.actions.run(time)
-			else
+			} else
 				me.isPauseConfirmed = true
 
 			me.renderer.render(me.scene, me.camera)

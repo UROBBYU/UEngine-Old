@@ -42,48 +42,38 @@ window.addEventListener('keydown', e => {
 	if (!game.isPaused) {
 		switch (e.code) {
 		case 'KeyA':
-			if (!game.keyA && !game.objects.character.isLocked) {
+			if (!game.keyA) {
 				if (!game.objects['character'].flipX) {
 					game.objects['character'].flipX = true
 				}
-				game.actions['characterIdle'].stop()
 				if (game.keyShift) {
-          game.actions['characterRun'].start()
-					game.world.camera.move(-0.75, 0)
+					game.controls.move(-0.75, 0)
         } else {
-          game.actions['characterWalk'].start()
-					game.world.camera.move(-0.32, 0)
+					game.controls.move(-0.32, 0)
 				}
 			}
 			game.keyA = true
 			break
 		case 'KeyD':
-			if (!game.keyD && !game.objects.character.isLocked) {
+			if (!game.keyD) {
 				if (game.objects['character'].flipX) {
 					game.objects['character'].flipX = false
 				}
-				game.actions['characterIdle'].stop()
         if (game.keyShift) {
-          game.actions['characterRun'].start()
-					game.world.camera.move(0.75, 0)
+					game.controls.move(0.75, 0)
 				} else {
-          game.actions['characterWalk'].start()
-					game.world.camera.move(0.32, 0)
+					game.controls.move(0.32, 0)
 				}
 			}
 			game.keyD = true
 			break
 		case 'ShiftLeft':
-			if (!game.keyShift && !game.objects.character.isLocked) {
-				game.world.camera.stop()
+			if (!game.keyShift) {
+				game.controls.move(0, 0)
 				if (game.keyA) {
-					game.actions['characterWalk'].stop()
-	        game.actions['characterRun'].start()
-					game.world.camera.move(-0.75, 0)
+					game.controls.move(-0.75, 0)
 				} else if (game.keyD) {
-					game.actions['characterWalk'].stop()
-	        game.actions['characterRun'].start()
-					game.world.camera.move(0.75, 0)
+					game.controls.move(0.75, 0)
 				}
 			}
 			game.keyShift = true
@@ -102,10 +92,10 @@ window.addEventListener('keyup', e => {
 				game.actions['characterRun'].stop()
 				game.actions['characterIdle'].stop()
 				if (game.keyShift && (game.keyA || game.keyD)) {
-					game.world.camera.speed.x = !game.objects['character'].flipX ? 0.6 : -0.6
+					game.controls.move(!game.objects['character'].flipX ? 0.6 : -0.6, 0)
 					game.actions['characterAttack3'].start()
 				} else if (!game.keyShift && (game.keyA || game.keyD)) {
-					game.world.camera.speed.x = 0
+					game.controls.move(0, 0)
 					game.actions['characterAttack1'].start()
 				} else
 					game.actions['characterAttack2'].start()
@@ -116,7 +106,7 @@ window.addEventListener('keyup', e => {
 				if (game.objects.chest.state == 1 && game.objects.chest.step == 0) {
 					game.objects.chest.step = 1
 				} else if (game.objects.chest.state == 1 && game.objects.chest.step == 1) {
-					game.actions['chest'].stop()
+					game.colliders.remove('chest')
 					game.objects.chest.state = 0
 					game.objects.chest.step = 2
 				}
@@ -152,33 +142,19 @@ window.addEventListener('keyup', e => {
 			}
 			break
 		case 'KeyA':
-			if (!game.objects.character.isLocked) {
-				game.actions['characterWalk'].stop()
-      	game.actions['characterRun'].stop()
-				game.world.camera.stop()
-      	game.actions['characterIdle'].start()
-			}
+			game.controls.move(0, 0)
 			game.keyA = false
 			break
 		case 'KeyD':
-			if (!game.objects.character.isLocked) {
-      	game.actions['characterWalk'].stop()
-      	game.actions['characterRun'].stop()
-				game.world.camera.stop()
-      	game.actions['characterIdle'].start()
-			}
+			game.controls.move(0, 0)
 			game.keyD = false
 			break
 		case 'ShiftLeft':
 			if (!game.objects.character.isLocked) {
 				if (game.keyA) {
-					game.world.camera.move(-0.32, 0)
-					game.actions['characterRun'].stop()
-					game.actions['characterWalk'].start()
+					game.controls.move(-0.32, 0)
 				} else if (game.keyD) {
-					game.world.camera.move(0.32, 0)
-					game.actions['characterRun'].stop()
-					game.actions['characterWalk'].start()
+					game.controls.move(0.32, 0)
 				}
 			}
 			game.keyShift = false
