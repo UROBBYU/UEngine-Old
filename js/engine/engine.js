@@ -432,6 +432,22 @@ else {
 		}
 	}
 
+	static SpriteMenu = class extends Game.Sprite {
+		constructor() {
+			this.shaderCode = `
+vec2 texSize = vec2(textureSize(tex, 0));
+vec2 scale = texScale.xy * resolution / texSize * texScale.z;
+vec2 scrDim = resolution / scale;
+vec2 coord = gl_FragCoord.xy / scale - pos.xy;
+coord = floor(coord) + 0.5;
+if (texFlipX) coord.x = texSize.x - coord.x - texSize.x;
+if (texFlipY) coord.y = texSize.y - coord.y - texSize.y;
+coord = coord / texSize;
+`
+			this.reshade()
+		}
+	}
+
 	static Level = class {
 		static encode = str => {
 			return encodeURI(unescape(btoa(str)))
@@ -735,6 +751,7 @@ else {
 		me.resume = () => {
 			delete me.hardStop
 			me.isPaused = false
+			me.events.fire('resumed')
 		}
 		me.objects = Object.create({},{
 			add: {
