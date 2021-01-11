@@ -12,7 +12,11 @@ export class Game {
 				}
 			}
 		})
-		target.addEventListener = (name, func) => target.events.list[name].push(func)
+		target.addEventListener = (name, func) => {
+			if (!target.events.list[name])
+				target.events.list[name] = []
+			target.events.list[name].push(func)
+		}
 		target.removeEventListener = (name, func) => target.events.list[name].splice(target.events.list[name].indexOf(func), 1)
 	}
 
@@ -195,11 +199,15 @@ void main()
 
 		set texture(val) {
 			this.uniforms.tex.value = val
-			this.scale.x = val.texScale.x
-			this.scale.y = val.texScale.y
-			this.scale.z = val.texScale.z
-			this.position.z = val.anchor.x
-			this.position.w = val.anchor.y
+			if (val.texScale) {
+				this.scale.x = val.texScale.x
+				this.scale.y = val.texScale.y
+				this.scale.z = val.texScale.z
+			}
+			if (val.anchor) {
+				this.position.z = val.anchor.x
+				this.position.w = val.anchor.y
+			}
 		}
 
 		get flipX() {
@@ -723,6 +731,7 @@ coord = coord / texSize;
 		me.isPaused = true
 		me.pause = () => {
 			return new Promise((res, rej) => {
+				me.events.fire('paused')
 				me.isPauseConfirmed = false
 				me.isPaused = true
 				let inter = setInterval(() => {
@@ -730,7 +739,6 @@ coord = coord / texSize;
 						me.loader.wait().then(() => {
 							delete me.isPauseConfirmed
 							res()
-							me.events.fire('paused')
 						})
 					}
 				}, 50)
@@ -997,12 +1005,15 @@ coord = coord / texSize;
 
 		me.resize = () => {
 			let dim = (window.innerWidth > window.innerHeight ? window.innerHeight : window.innerWidth)
-			if (!me.isPaused)
-				for (let name in me.objects) {
+			for (let name in me.objects) {
+				if (!me.isPaused || Game.SpriteMenu.prototype.isPrototypeOf(me.objects[name])) {
 					me.uni(name).resolution.value.x = dim
 					me.uni(name).resolution.value.y = dim
 				}
+			}
 			me.renderer.setSize(dim, dim)
+			display.style.marginLeft =  (window.innerWidth - display.getBoundingClientRect().width) / 2 + 'px'
+			display.style.marginTop =  (window.innerHeight - display.getBoundingClientRect().height) / 2 + 'px'
 			me.events.fire('resize')
 		}
 

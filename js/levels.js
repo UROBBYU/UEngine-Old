@@ -244,7 +244,7 @@ game.levels.add('forest1', new Game.Level(game, {
     background: new Game.SpritePlane(0, 0, 1000),
     character: new Game.SpriteSlideShow(40, 28, 1, 0, 100),
     chest: new Game.SpriteSwitch(10, 13, 3, 0, 500),
-    crate: new Game.Sprite(130, 26, 80),
+    crate: new Game.Sprite(-20, 26, 80),
     teleport_arc: new Game.SpriteSlideShow(60, 12, 2, 0, 500),
     teleport_gems:  new Game.SpriteSlideShow(61, 14, 4, 0, 500),
     teleport_keyboard:  new Game.SpriteSwitch(109, 27, 1, 0, 499),
@@ -262,10 +262,10 @@ game.levels.add('forest1', new Game.Level(game, {
       ready: true
     };
 
-    game.addEventListener('pause', () => {
+    game.addEventListener('paused', () => {
       game.objects.pauseScreen.material.visible = true;
     });
-    game.addEventListener('resume', () => {
+    game.addEventListener('resumed', () => {
       game.objects.pauseScreen.material.visible = false;
     });
 
