@@ -433,7 +433,8 @@ else {
 	}
 
 	static SpriteMenu = class extends Game.Sprite {
-		constructor() {
+		constructor(x, y, z) {
+			super(x, y, z)
 			this.shaderCode = `
 vec2 texSize = vec2(textureSize(tex, 0));
 vec2 scale = texScale.xy * resolution / texSize * texScale.z;
