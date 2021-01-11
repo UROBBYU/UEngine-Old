@@ -19,8 +19,9 @@ export class Game {
 	static Animation = class extends Game.Action {
 		constructor(func, speed, object, texture) {
 			super(() => {
-				if (object.texture !== this.texture)
+				if (object.texture !== this.texture) {
 					object.texture = this.texture
+				}
 				func()
 			}, speed)
 			this.object = object
@@ -40,7 +41,7 @@ export class Game {
 	static AnimationSlideShow = class extends Game.Animation {
 		constructor(speed, steps, start, step, object, texture, sequence, onSeqEnd) {
 			var tex = texture
-			if (tex.image.width % step === 0) {
+			if (tex.image.width % steps === 0) {
 				super(() => {
 					object.stepsMax = this.steps
 					if (this.sequence) {
@@ -90,19 +91,19 @@ export class Game {
 	}
 
 	static Sprite = class {
-		constructor(x, y, scale, z) {
+		constructor(x, y, z) {
 			this.uniforms = {
 				resolution: {
 					value: new THREE.Vector2(window.innerWidth, window.innerHeight)
 				},
 				pos: {
-			    value: new THREE.Vector2(x, y)
+			    value: new THREE.Vector4(x, y, 0, 0)
 			  },
 				tex: {
 					value: new THREE.TextureLoader().load('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAQCAYAAAAiYZ4HAAABhWlDQ1BJQ0MgcHJvZmlsZQAAKJF9kT1Iw1AUhU9TpSIVBTuIOGSoLloQleIoVSyChdJWaNXB5KV/0KQhSXFxFFwLDv4sVh1cnHV1cBUEwR8QNzcnRRcp8b6k0CLGC4/3cd49h/fuA4RGhalm1ySgapaRisfEbG5VDLzChwAGMI6oxEw9kV7MwLO+7qmb6i7Cs7z7/qw+JW8ywCcSzzHdsIg3iKObls55nzjESpJCfE48YdAFiR+5Lrv8xrnosMAzQ0YmNU8cIhaLHSx3MCsZKvEMcVhRNcoXsi4rnLc4q5Uaa92TvzCY11bSXKc1gjiWkEASImTUUEYFFiK0a6SYSNF5zMM/7PiT5JLJVQYjxwKqUCE5fvA/+D1bszA95SYFY0D3i21/jAKBXaBZt+3vY9tungD+Z+BKa/urDWD2k/R6WwsfAf3bwMV1W5P3gMsdYOhJlwzJkfy0hEIBeD+jb8oBg7dA75o7t9Y5Th+ADM1q+QY4OATGipS97vHuns65/dvTmt8PupRyxKoto9QAAAAGYktHRAD/AJ0AAMbsV1AAAAAJcEhZcwAALiMAAC4jAXilP3YAAAAHdElNRQflAQcSCCW2lRjJAAAAGXRFWHRDb21tZW50AENyZWF0ZWQgd2l0aCBHSU1QV4EOFwAAAM5JREFUKM+tkrENwjAQRZ8j6JmAnrhAmcEVYyBmoKOkYwbEGNB4BBSaQE8JDRschePEhyNEwe+SvH/3820YkLwQeSH8ohQcMhX8Q98imfkULueqfzOuFWgmGPUszyoD3bYBwG9sZgyGR4BdGUDWOoZfBqOxmO6nOxhgpw3u0CQtPWr5uYwGKbLpgL/aLkbcGJkRd6BEZ3fD0biDkWPo23m95RP2p7CxMAvd8zeZRdKSd1Z/XefTgX667Pur4G7twc0ScNUeXFbdXt+hCEa9Ab3jSowNnihhAAAAAElFTkSuQmCC')
 				},
 				texScale: {
-					value: new THREE.Vector4(1, 1, scale, 1)
+					value: new THREE.Vector3(1, 1, 1)
 				},
 				texFlipX: {
 					value: false
@@ -113,20 +114,20 @@ export class Game {
 			}
 			this.shaderUniforms = `
 uniform vec2 resolution;
-uniform vec2 pos;
+uniform vec4 pos;
 uniform sampler2D tex;
-uniform vec4 texScale;
+uniform vec3 texScale;
 uniform bool texFlipX;
 uniform bool texFlipY;
 `
 			this.shaderCode = `
 vec2 texSize = vec2(textureSize(tex, 0));
-vec2 scale = texScale.xy * texScale.z * texScale.w;
+vec2 scale = texScale.xy * resolution / texSize * texScale.z;
 vec2 scrDim = resolution / scale;
-vec2 coord = gl_FragCoord.xy / scale - pos;
+vec2 coord = gl_FragCoord.xy / scale - pos.xy + pos.zw;
 coord = floor(coord) + 0.5;
-if (texFlipX) coord.x = texSize.x - coord.x;
-if (texFlipY) coord.y = texSize.y - coord.y;
+if (texFlipX) coord.x = texSize.x - coord.x - texSize.x + pos.z * 2.;
+if (texFlipY) coord.y = texSize.y - coord.y - texSize.y + pos.w * 2.;
 coord = coord / texSize;
 `
 			this.shaderCheck = `
@@ -165,6 +166,11 @@ void main()
 
 		set texture(val) {
 			this.uniforms.tex.value = val
+			this.scale.x = val.texScale.x
+			this.scale.y = val.texScale.y
+			this.scale.z = val.texScale.z
+			this.position.z = val.anchor.x
+			this.position.w = val.anchor.y
 		}
 
 		get flipX() {
@@ -201,12 +207,20 @@ void main()
 					this.uniforms.pos.value.x = val.x
 				if (val.y)
 					this.uniforms.pos.value.y = val.y
+				if (val.z)
+					this.uniforms.pos.value.z = val.z
+				if (val.w)
+					this.uniforms.pos.value.w = val.w
 			} else if (val.constructor === Array) {
-				let [x, y] = val
+				let [x, y, z, w] = val
 				if (x)
 					this.uniforms.pos.value.x = x
 				if (y)
 					this.uniforms.pos.value.y = y
+				if (z)
+					this.uniforms.pos.value.z = z
+				if (w)
+					this.uniforms.pos.value.w = w
 			} else {
 				console.error('Invalid argument: ', val)
 			}
@@ -215,11 +229,20 @@ void main()
 		get scale() {
 			return this.uniforms.texScale.value
 		}
+
+		get bounds() {
+			return {
+				x1: this.position.x - this.texture.anchor.x,
+				x2: this.position.x + this.texture.anchor.x,
+				y1: this.position.y - this.texture.anchor.y,
+				y2: this.position.y + this.texture.anchor.y
+			}
+		}
 	}
 
 	static SpritePlane = class extends Game.Sprite {
-		constructor(x, y, scale, z) {
-			super(x, y, scale, z)
+		constructor(x, y, z) {
+			super(x, y, z)
 			this.material.transparent = false
 			this.shaderCheck = `
 gl_FragColor = texture2D(tex, coord);
@@ -231,12 +254,13 @@ gl_FragColor = texture2D(tex, coord);
 			val.wrapS = THREE.RepeatWrapping
 			val.wrapT = THREE.RepeatWrapping
 			this.uniforms.tex.value = val
+			this.uniforms.texScale.value = val.texScale
 		}
 	}
 
 	static SpriteSlideShow = class extends Game.Sprite {
-		constructor(x, y, scale, maxSteps, step, z) {
-			super(x, y, scale, z)
+		constructor(x, y, maxSteps, step, z) {
+			super(x, y, z)
 			this.uniforms.steps = {
 				value: maxSteps
 			}
@@ -250,13 +274,13 @@ uniform float step;
 `
 			this.shaderCode = `
 vec2 texSize = vec2(textureSize(tex, 0));
-vec2 scale = texScale.xy * texScale.z * texScale.w;
-vec2 scrDim = resolution / scale;
-vec2 coord = gl_FragCoord.xy / scale - pos;
-coord = floor(coord) + 0.5;
 float stepSize = texSize.x / steps;
-if (texFlipX) coord.x = stepSize - coord.x;
-if (texFlipY) coord.y = stepSize - coord.y;
+vec2 scale = texScale.xy * resolution / vec2(stepSize, texSize.y) * vec2(texScale.z * stepSize / texSize.y, texScale.z);
+vec2 scrDim = resolution / scale;
+vec2 coord = gl_FragCoord.xy / scale - pos.xy + pos.zw;
+coord = floor(coord) + 0.5;
+if (texFlipX) coord.x = stepSize - coord.x - stepSize + pos.z * 2.;
+if (texFlipY) coord.y = texSize.y - coord.y - texSize.y + pos.w * 2.;
 coord.x = (coord.x + stepSize * step) / texSize.x;
 coord.y = coord.y / texSize.y;
 `
@@ -287,8 +311,8 @@ else
 	}
 
 	static SpriteSwitch = class extends Game.SpriteSlideShow {
-		constructor(x, y, scale, maxSteps, step, z) {
-			super(x, y, scale, maxSteps, step, z)
+		constructor(x, y, maxSteps, step, z) {
+			super(x, y, maxSteps, step, z)
 			this.uniforms.state = {
 				value: 0
 			}
@@ -443,35 +467,98 @@ else {
 			},
 			loadTextures: tex => {
 				if (tex.constructor === Object) {
-					for (let key in tex)
-						me.sprites.add(key, tex[key])
+					for (let key in tex) {
+						if (tex[key].constructor === Object) {
+							me.sprites.add(key, tex[key].file, tex[key].anchor, tex[key].scale)
+						} else if (tex[key].constructor === String) {
+							me.sprites.add(key, tex[key])
+						} else
+							console.error('Invalid argument: ', tex)
+					}
 					return me.loader.wait()
 				} else if (tex.constructor === Array) {
 					tex.forEach(val => {
-						me.sprites.add(val[0], val[1])
+						if (val[1].constructor === Object) {
+							me.sprites.add(val[0], val[1].file, val[1].scale)
+						} else if (val[1].constructor === Array) {
+							me.sprites.add(val[0], val[1][0], val[1][1])
+						} else if (val.constructor === String) {
+							me.sprites.add(key, val)
+						} else
+							console.error('Invalid argument: ', tex)
 					})
 					return me.loader.wait()
-				} else {
+				} else
 					console.error('Invalid argument: ', tex)
-				}
 			}
 		}
 		me.sprites = Object.create({},{
 			add: {
 				get() {
-					return (name, url) => {
+					return (name, file, anchor, scale) => {
 						if (!me.sprites[name]) {
 							me.loader.toLoad++
-							return me.texLoader.load(
-								url,
+							me.texLoader.load(
+								file,
 								texture => {
 									me.loader.toLoad--
-									me.sprites[name] = texture
+									if (anchor) {
+										if (anchor.constructor === Object) {
+											texture.anchor = {
+												x: anchor.x ? anchor.x : 0,
+												y: anchor.y ? anchor.y : 0
+											}
+										} else if (anchor.constructor === Array) {
+											texture.anchor = {
+												x: anchor[0] ? anchor[0] : 0,
+												y: anchor[1] ? anchor[1] : 0
+											}
+										} else
+											console.error('Invalid argument: ', {name: name, file: file, anchor: anchor, scale: scale})
+										if (scale) {
+											if (scale.constructor === Object) {
+												texture.texScale = {
+													x: scale.x ? scale.x : 1,
+													y: scale.y ? scale.y : 1,
+													z: scale.z ? scale.z : 1
+												}
+											} else if (scale.constructor === Array) {
+												texture.texScale = {
+													x: scale[0] ? scale[0] : 1,
+													y: scale[1] ? scale[1] : 1,
+													z: scale[2] ? scale[2] : 1
+												}
+											} else if (scale.constructor === Number) {
+												texture.texScale = {
+													x: 1,
+													y: 1,
+													z: scale
+												}
+											} else
+												console.error('Invalid argument: ', {name: name, file: file, anchor: anchor, scale: scale})
+										} else
+											texture.texScale = {
+												x: 1,
+												y: 1,
+												z: 1
+											}
+										} else {
+											texture.anchor = {
+												x: 0,
+												y: 0
+											}
+											texture.texScale = {
+												x: 1,
+												y: 1,
+												z: scale
+											}
+										}
+										me.sprites[name] = texture
 								},
 								undefined,
 								function (err) {
 									me.loader.toLoad = Number.NEGATIVE_INFINITY
-									console.error('Error occured while loading texture', {name: name, url: url})
+									console.error('Error occured while loading texture', {name: name, file: file, scale: scale})
 								}
 							)
 						} else
@@ -615,7 +702,7 @@ else {
 					obj.position.y -= me.world.camera.speed.y
 				}
 			}
-		}, 30)
+		}, 15)
 		me.world = {
 			camera: {
 				position: {
@@ -726,8 +813,6 @@ else {
 				for (let name in me.objects) {
 					me.uni(name).resolution.value.x = dim
 					me.uni(name).resolution.value.y = dim
-					if (me.uni(name).tex.value.image)
-						me.objects[name].scale.w = window.innerHeight / me.uni(name).tex.value.image.naturalHeight
 				}
 			me.renderer.setSize(dim, dim)
 		}
