@@ -83,13 +83,13 @@ game.levels.add('forest1', new Game.Level(game, {
   },
   actions: `return {
     cameraMove: new Game.Action(() => {
-      let nextPosX = game.controls.camera.target.position.x + game.controls.speed.x
-      let nextPosY = game.controls.camera.target.position.y + game.controls.speed.y
+      let nextPosX = game.controls.camera.target.position.x + game.controls.speed.x;
+      let nextPosY = game.controls.camera.target.position.y + game.controls.speed.y;
       for (let name in game.solids) {
         let obj = game.solids[name];
         if (game.colliders.intersects([game.objects.character.bounds.x1 + nextPosX, game.objects.character.bounds.y1 + nextPosY, game.objects.character.bounds.x2 + nextPosX, game.objects.character.bounds.y2 + nextPosY], obj.worldBounds)) {
           if (game.controls.curPos != 'characterPush') {
-            game.controls.camera.target.isLocked = true
+            game.controls.camera.target.isLocked = true;
             game.actions[game.controls.curPos].stop();
             game.controls.curPos = 'characterPush';
             if (obj.canMove)
@@ -101,9 +101,9 @@ game.levels.add('forest1', new Game.Level(game, {
             if (game.controls.speed.x === 0) {
               game.actions[game.controls.curPos].pause();
               if (game.objects.character.step === 1 || game.objects.character.step === 5)
-                game.objects.character.step = 0
+                game.objects.character.step = 0;
               else if (game.objects.character.step === 2 || game.objects.character.step === 4)
-                game.objects.character.step = 3
+                game.objects.character.step = 3;
             } else if (!game.actions[game.controls.curPos].isActive) {
               game.actions[game.controls.curPos].start();
             }
@@ -115,7 +115,7 @@ game.levels.add('forest1', new Game.Level(game, {
             }
           }
         } else if (game.controls.curPos === 'characterPush') {
-          game.controls.camera.target.isLocked = false
+          game.controls.camera.target.isLocked = false;
         }
       }
       if (!game.controls.camera.target.isLocked) {
