@@ -459,7 +459,7 @@ coord = coord / texSize;
 
 	static Level = class {
 		static encode = str => {
-			return encodeURI(unescape(btoa(str)))
+			return encodeURI(btoa(str))
 		}
 
 		constructor(gameObj, link, devMode) {
@@ -511,7 +511,7 @@ coord = coord / texSize;
 							handle(this.data.origin)
 						else
 							fetch(this.data.origin).then(res => res.text()).then(text => {
-								var tmp = new Function(decodeURIComponent(escape(window.atob(text))))
+								var tmp = new Function(decodeURI(atob(text)))
 								tmp = tmp()
 								handle(tmp)
 							})
