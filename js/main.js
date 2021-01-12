@@ -5,7 +5,7 @@ display.requestFullscreen = display.requestFullscreen || display.mozRequestFullS
 
 window.game = new Game()
 
-game.levels.add('forest1', new Game.Level(game, 'https://urobbyu.github.io/UEngine/levels/forest'))
+game.levels.add('forest1', new Game.Level(game, 'https://urobbyu.github.io/UEngine/levels/forest2'))
 game.levels.forest1.load()
 /*game.levels.add('forest2', new Game.Level(game, 'https://urobbyu.github.io/UEngine/levels/forest2.txt'))
 game.levels.add('forest3', new Game.Level(game, 'https://urobbyu.github.io/UEngine/levels/forest3.txt'))

@@ -147,6 +147,7 @@ export class Game {
 			this.shaderUniforms = `
 uniform vec2 resolution;
 uniform vec4 pos;
+uniform vec4 bounds;
 uniform vec2 camPos;
 uniform sampler2D tex;
 uniform vec3 texScale;
@@ -155,7 +156,7 @@ uniform bool texFlipY;
 `
 			this.shaderCode = `
 vec2 texSize = vec2(textureSize(tex, 0));
-vec2 scale = texScale.xy * resolution / texSize * texScale.z;
+vec2 scale = texScale.xy * resolution.y / texSize * texScale.z;
 vec2 scrDim = resolution / scale;
 vec2 coord = gl_FragCoord.xy / scale - pos.xy + pos.zw - camPos.xy;
 coord = floor(coord) + 0.5;
@@ -367,7 +368,7 @@ uniform float step;
 			this.shaderCode = `
 vec2 texSize = vec2(textureSize(tex, 0));
 float stepSize = texSize.x / steps;
-vec2 scale = texScale.xy * resolution / vec2(stepSize, texSize.y) * vec2(texScale.z * stepSize / texSize.y, texScale.z);
+vec2 scale = texScale.xy * resolution.y / vec2(stepSize, texSize.y) * vec2(texScale.z * stepSize / texSize.y, texScale.z);
 vec2 scrDim = resolution / scale;
 vec2 coord = gl_FragCoord.xy / scale - pos.xy + pos.zw - camPos.xy;
 coord = floor(coord) + 0.5;
@@ -443,11 +444,17 @@ else {
 	static SpriteMenu = class extends Game.Sprite {
 		constructor(x, y, z) {
 			super(x, y, z)
+			this.uniforms.clipToMin = {
+				value: true
+			}
+			this.shaderUniforms += `
+uniform bool clipToMin;
+`
 			this.shaderCode = `
 vec2 texSize = vec2(textureSize(tex, 0));
-vec2 scale = texScale.xy * resolution / texSize * texScale.z;
-vec2 scrDim = resolution / scale;
-vec2 coord = gl_FragCoord.xy / scale - pos.xy;
+vec2 res = (resolution.x > resolution.y ? (clipToMin ? resolution.yy : resolution.xx) : (clipToMin ? resolution.xx : resolution.yy));
+vec2 scale = texScale.xy * res / texSize * texScale.z;
+vec2 coord = gl_FragCoord.xy / scale - pos.xy + pos.zw;
 coord = floor(coord) + 0.5;
 if (texFlipX) coord.x = texSize.x - coord.x - texSize.x;
 if (texFlipY) coord.y = texSize.y - coord.y - texSize.y;
@@ -815,6 +822,10 @@ coord = coord / texSize;
 				position: {
 					x: 0,
 					y: 0
+				},
+				disposition: {
+					x: 0,
+					y: 0
 				}
 			},
 			speed: {
@@ -1007,11 +1018,14 @@ coord = coord / texSize;
 			let dim = (window.innerWidth > window.innerHeight ? window.innerHeight : window.innerWidth)
 			for (let name in me.objects) {
 				if (!me.isPaused || Game.SpriteMenu.prototype.isPrototypeOf(me.objects[name])) {
-					me.uni(name).resolution.value.x = dim
-					me.uni(name).resolution.value.y = dim
+					me.uni(name).resolution.value.x = window.innerWidth
+					me.uni(name).resolution.value.y = window.innerHeight
 				}
 			}
-			me.renderer.setSize(dim, dim)
+			if (me.isPaused)
+				me.renderer.setSize(dim, dim)
+			else
+				me.renderer.setSize(window.innerWidth, window.innerHeight)
 			display.style.marginLeft =  (window.innerWidth - display.getBoundingClientRect().width) / 2 + 'px'
 			display.style.marginTop =  (window.innerHeight - display.getBoundingClientRect().height) / 2 + 'px'
 			me.events.fire('resize')
