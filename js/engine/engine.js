@@ -1,24 +1,3 @@
-/*
-DEPRECATED
-UEngine v0.1
-Author: UROBBYU
-
-This engine extends WebGL2 capabilities.
-Easy to use - easy to run.
-*/
-
-/* Скелет:
-Скелет - объект, содержащий массив костей(векторов) и их позиций с масштабом и поворотом.
-
-Скелеты нужно присваивать мэшевым спрайтам.
-Данные спрайты состоят из массива изображений, для каждого из которых существует массив весов привязанных к ним костей.
-Весы для кости это массив дробных чисел от 0 до 1, определяющих влияние кости на каждый отдельно взятый пиксель текстуры.
-*Аппендум:
- Не нужно создавать пустые массивы весов для костей, которые не привязаны к текстуре.
-При обновлении кадра, нужно пробежатся по всем весам текстуры, и в зависимости от их значений, создать трансформированную версию текстуры, которую и загрузить в шейдер.
-ИЛИ считать цвет пикселя внутри шейдера, задействовав для этого сложную и пока не понятную математику.
-*/
-
 export class Game {
 	static createEventBus(target) {
 		target.events = Object.create({
@@ -173,8 +152,8 @@ uniform vec2 camPos;
 uniform sampler2D tex;
 uniform vec3 texScale;
 uniform bool texFlipX;
-uniform bool texFlipY;`
-
+uniform bool texFlipY;
+`
 			this.shaderCode = `
 vec2 texSize = vec2(textureSize(tex, 0));
 vec2 scale = texScale.xy * resolution.y / texSize * texScale.z;
@@ -183,14 +162,14 @@ vec2 coord = gl_FragCoord.xy / scale - pos.xy + pos.zw - camPos.xy;
 coord = floor(coord) + 0.5;
 if (texFlipX) coord.x = texSize.x - coord.x - texSize.x + pos.z * 2.;
 if (texFlipY) coord.y = texSize.y - coord.y - texSize.y + pos.w * 2.;
-coord = coord / texSize;`
-
+coord = coord / texSize;
+`
 			this.shaderCheck = `
 if (coord.x < 0. || coord.x > 1. || coord.y < 0. || coord.y > 1.)
   gl_FragColor = vec4(0., 0., 0., 0.);
 else
-  gl_FragColor = texture2D(tex, coord);`
-
+  gl_FragColor = texture2D(tex, coord);
+`
 			this.shader = ''
 			this.material = new THREE.ShaderMaterial({
 				transparent: true,
@@ -575,10 +554,9 @@ coord = coord / texSize;
 		}
 	}
 
-	constructor(canvas) {
+	constructor() {
 		Game.createEventBus(this)
 		let me = this
-		me.display = canvas
 		me.scene = new THREE.Scene()
 		me.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, -1000)
 		me.renderer = new THREE.WebGLRenderer({
@@ -700,7 +678,7 @@ coord = coord / texSize;
 								},
 								undefined,
 								function (err) {
-									me.loader.toLoad = Number.INFINITY
+									me.loader.toLoad = Number.NEGATIVE_INFINITY
 									console.error('Error occured while loading texture', {name: name, file: file, scale: scale})
 								}
 							)
@@ -1048,8 +1026,8 @@ coord = coord / texSize;
 				me.renderer.setSize(dim, dim)
 			else
 				me.renderer.setSize(window.innerWidth, window.innerHeight)
-			me.display.style.marginLeft =  (window.innerWidth - me.display.getBoundingClientRect().width) / 2 + 'px'
-			me.display.style.marginTop =  (window.innerHeight - me.display.getBoundingClientRect().height) / 2 + 'px'
+			display.style.marginLeft =  (window.innerWidth - display.getBoundingClientRect().width) / 2 + 'px'
+			display.style.marginTop =  (window.innerHeight - display.getBoundingClientRect().height) / 2 + 'px'
 			me.events.fire('resize')
 		}
 
