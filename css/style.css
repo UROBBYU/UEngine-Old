@@ -3,3 +3,15 @@ body {
   overflow: hidden;
   background-color: rgb(37, 45, 34);
 }
+
+#display {
+  width: 100vh;
+  height: 100vh;
+  image-rendering: optimizespeed;
+}
+
+#tester {
+  width: 100vh;
+  height: 100vh;
+  image-rendering: optimizespeed;
+}
