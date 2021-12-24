@@ -166,15 +166,13 @@ void main() {
             list: [],
             map: new Map(),
             set(name, texture) {
-              let index
               for (let i = 0; i < me.scene.renderer.programInfo.textures.list.length + 1; i++) {
                 if (!me.scene.renderer.programInfo.textures.list[i]) {
-                  index = i
+                  me.scene.renderer.programInfo.textures.list[i] = texture
+                  me.scene.renderer.programInfo.textures.map.set(name, i)
                   break
                 }
               }
-              me.scene.renderer.programInfo.textures.list[index] = texture
-              me.scene.renderer.programInfo.textures.map.set(name, index)
             },
             get: (name) => me.scene.renderer.programInfo.textures.list[me.scene.renderer.programInfo.textures.getIndex(name)],
             getIndex: (name) => me.scene.renderer.programInfo.textures.map.get(name),
